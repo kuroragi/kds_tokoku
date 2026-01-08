@@ -11,6 +11,7 @@ class JournalMaster extends Model
     use SoftDeletes, Blameable;
 
     protected $fillable = [
+        'id_period',
         'journal_no',
         'journal_date',
         'reference',
@@ -29,6 +30,11 @@ class JournalMaster extends Model
     ];
 
     // Relationships
+    public function period()
+    {
+        return $this->belongsTo(Period::class, 'id_period');
+    }
+
     public function journals()
     {
         return $this->hasMany(Journal::class, 'id_journal_master');

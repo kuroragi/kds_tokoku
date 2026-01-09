@@ -11,9 +11,9 @@ class ViewJournalDetails extends Model
     public $incrementing = false;
 
     protected $casts = [
-        'debit' => 'decimal:2',
-        'credit' => 'decimal:2',
-        'amount' => 'decimal:2',
+        'debit' => 'biginteger',
+        'credit' => 'biginteger',
+        'amount' => 'biginteger',
         'sequence' => 'integer',
         'journal_date' => 'date',
     ];

@@ -13,8 +13,8 @@ class ViewJournalRecap extends Model
 
     protected $casts = [
         'total_journals' => 'integer',
-        'total_debit' => 'decimal:2',
-        'total_credit' => 'decimal:2',
+        'total_debit' => 'biginteger',
+        'total_credit' => 'biginteger',
         'posted_journals' => 'integer',
         'draft_journals' => 'integer',
         'year' => 'integer',

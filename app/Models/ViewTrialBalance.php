@@ -11,10 +11,10 @@ class ViewTrialBalance extends Model
     public $incrementing = false;
 
     protected $casts = [
-        'total_debit' => 'decimal:2',
-        'total_credit' => 'decimal:2',
-        'balance' => 'decimal:2',
-        'normal_balance' => 'decimal:2',
+        'total_debit' => 'biginteger',
+        'total_credit' => 'biginteger',
+        'balance' => 'biginteger',
+        'normal_balance' => 'biginteger',
         'year' => 'integer',
         'month' => 'integer',
     ];

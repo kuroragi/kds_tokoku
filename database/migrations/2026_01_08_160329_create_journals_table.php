@@ -16,8 +16,8 @@ return new class extends Migration
             $table->unsignedBigInteger('id_journal_master');
             $table->unsignedBigInteger('id_coa');
             $table->text('description')->nullable();
-            $table->decimal('debit', 15, 2)->default(0);
-            $table->decimal('credit', 15, 2)->default(0);
+            $table->bigInteger('debit')->default(0);
+            $table->bigInteger('credit')->default(0);
             $table->integer('sequence')->default(1);
             $table->timestamps();
             $table->softDeletes();

@@ -117,7 +117,7 @@
                                                     <select
                                                         class="form-select form-select-sm @error('journalDetails.'.$index.'.id_coa') is-invalid @enderror"
                                                         wire:model="journalDetails.{{ $index }}.id_coa">
-                                                        <option value="">-- Pilih Akun --</option>
+                                                        <option value="">-- Pilih akun --</option>
                                                         @foreach($coas as $coa)
                                                         <option value="{{ $coa->id }}">
                                                             {{ $coa->code }} - {{ $coa->name }}
@@ -238,4 +238,16 @@
         }
     }
 </style>
+@endpush
+
+@push('script')
+<script>
+    // Auto period selection based on date
+    document.addEventListener('livewire:init', () => {
+        // Listen for date changes to auto-select period
+        Livewire.hook('morph.updated', ({ el, component }) => {
+            // Any additional initialization if needed
+        });
+    });
+</script>
 @endpush

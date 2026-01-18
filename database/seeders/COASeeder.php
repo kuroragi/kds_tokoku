@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\COA;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Auth;
 
 class COASeeder extends Seeder
 {
@@ -16,7 +17,7 @@ class COASeeder extends Seeder
         // Login as super admin for blameable trait
         $superAdmin = \App\Models\User::where('email', 'superadmin@tokoku.com')->first();
         if ($superAdmin) {
-            auth()->login($superAdmin);
+            Auth::login($superAdmin);
         }
 
         // Create COAs with proper hierarchy and order

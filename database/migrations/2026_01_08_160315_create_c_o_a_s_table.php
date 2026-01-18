@@ -15,11 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('code', 20)->unique();
             $table->string('name');
-            $table->enum('type', ['asset', 'liability', 'equity', 'revenue', 'expense']);
-            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->enum('type', ['aktiva', 'pasiva', 'modal', 'pendapatan', 'beban']);
+            $table->unsignedBigInteger('parent_code')->nullable();
             $table->integer('level')->default(1);
+            $table->integer('order')->default(1);
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_leaf_account')->default(false);
             $table->timestamps();
             $table->softDeletes();
             $table->blameable();

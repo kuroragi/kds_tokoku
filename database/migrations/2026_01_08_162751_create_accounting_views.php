@@ -12,7 +12,7 @@ return new class extends Migration
     {
         // 1. View untuk Rekap Journal per Periode
         DB::statement("
-            CREATE VIEW view_journal_recap AS
+            CREATE OR REPLACE VIEW view_journal_recap AS
             SELECT 
                 jm.id_period,
                 p.code as period_code,
@@ -32,7 +32,7 @@ return new class extends Migration
 
         // 2. View untuk Detail Journal dengan COA
         DB::statement("
-            CREATE VIEW view_journal_details AS
+            CREATE OR REPLACE VIEW view_journal_details AS
             SELECT 
                 j.id,
                 jm.id as journal_master_id,
@@ -63,7 +63,7 @@ return new class extends Migration
 
         // 3. View untuk Buku Besar (General Ledger)
         DB::statement("
-            CREATE VIEW view_general_ledger AS
+            CREATE OR REPLACE VIEW view_general_ledger AS
             SELECT 
                 c.id as coa_id,
                 c.code as coa_code,
@@ -89,7 +89,7 @@ return new class extends Migration
 
         // 4. View untuk Neraca Saldo (Trial Balance) per Periode
         DB::statement("
-            CREATE VIEW view_trial_balance AS
+            CREATE OR REPLACE VIEW view_trial_balance AS
             SELECT 
                 jm.id_period,
                 p.code as period_code,
@@ -104,8 +104,8 @@ return new class extends Migration
                 SUM(j.credit) as total_credit,
                 (SUM(j.debit) - SUM(j.credit)) as balance,
                 CASE 
-                    WHEN c.type IN ('asset', 'expense') AND (SUM(j.debit) - SUM(j.credit)) > 0 THEN SUM(j.debit) - SUM(j.credit)
-                    WHEN c.type IN ('liability', 'equity', 'revenue') AND (SUM(j.debit) - SUM(j.credit)) < 0 THEN ABS(SUM(j.debit) - SUM(j.credit))
+                    WHEN c.type IN ('aktiva', 'beban') AND (SUM(j.debit) - SUM(j.credit)) > 0 THEN SUM(j.debit) - SUM(j.credit)
+                    WHEN c.type IN ('pasiva', 'modal', 'pendapatan') AND (SUM(j.debit) - SUM(j.credit)) < 0 THEN ABS(SUM(j.debit) - SUM(j.credit))
                     ELSE 0
                 END as normal_balance
             FROM journals j
@@ -125,7 +125,7 @@ return new class extends Migration
 
         // 5. View untuk Laporan Laba Rugi per Periode
         DB::statement("
-            CREATE VIEW view_income_statement AS
+            CREATE OR REPLACE VIEW view_income_statement AS
             SELECT 
                 jm.id_period,
                 p.code as period_code,
@@ -133,10 +133,10 @@ return new class extends Migration
                 p.year,
                 p.month,
                 c.type as account_type,
-                SUM(CASE WHEN c.type = 'revenue' THEN j.credit - j.debit ELSE 0 END) as total_revenue,
-                SUM(CASE WHEN c.type = 'expense' THEN j.debit - j.credit ELSE 0 END) as total_expense,
-                (SUM(CASE WHEN c.type = 'revenue' THEN j.credit - j.debit ELSE 0 END) - 
-                 SUM(CASE WHEN c.type = 'expense' THEN j.debit - j.credit ELSE 0 END)) as net_income
+                SUM(CASE WHEN c.type = 'pendapatan' THEN j.credit - j.debit ELSE 0 END) as total_pendapatan,
+                SUM(CASE WHEN c.type = 'beban' THEN j.debit - j.credit ELSE 0 END) as total_beban,
+                (SUM(CASE WHEN c.type = 'pendapatan' THEN j.credit - j.debit ELSE 0 END) - 
+                 SUM(CASE WHEN c.type = 'beban' THEN j.debit - j.credit ELSE 0 END)) as net_income
             FROM journals j
             INNER JOIN journal_masters jm ON j.id_journal_master = jm.id
             INNER JOIN c_o_a_s c ON j.id_coa = c.id
@@ -146,13 +146,13 @@ return new class extends Migration
                 AND c.deleted_at IS NULL
                 AND p.deleted_at IS NULL
                 AND jm.status = 'posted'
-                AND c.type IN ('revenue', 'expense')
+                AND c.type IN ('pendapatan', 'beban')
             GROUP BY jm.id_period, p.code, p.name, p.year, p.month, c.type
         ");
 
         // 6. View untuk Laporan Neraca (Balance Sheet) per Periode
         DB::statement("
-            CREATE VIEW view_balance_sheet AS
+            CREATE OR REPLACE VIEW view_balance_sheet AS
             SELECT 
                 jm.id_period,
                 p.code as period_code,
@@ -160,9 +160,9 @@ return new class extends Migration
                 p.year,
                 p.month,
                 c.type as account_type,
-                SUM(CASE WHEN c.type = 'asset' THEN j.debit - j.credit ELSE 0 END) as total_assets,
-                SUM(CASE WHEN c.type = 'liability' THEN j.credit - j.debit ELSE 0 END) as total_liabilities,
-                SUM(CASE WHEN c.type = 'equity' THEN j.credit - j.debit ELSE 0 END) as total_equity
+                SUM(CASE WHEN c.type = 'aktiva' THEN j.debit - j.credit ELSE 0 END) as total_aktiva,
+                SUM(CASE WHEN c.type = 'pasiva' THEN j.credit - j.debit ELSE 0 END) as total_pasiva,
+                SUM(CASE WHEN c.type = 'modal' THEN j.credit - j.debit ELSE 0 END) as total_modal
             FROM journals j
             INNER JOIN journal_masters jm ON j.id_journal_master = jm.id
             INNER JOIN c_o_a_s c ON j.id_coa = c.id
@@ -172,7 +172,7 @@ return new class extends Migration
                 AND c.deleted_at IS NULL
                 AND p.deleted_at IS NULL
                 AND jm.status = 'posted'
-                AND c.type IN ('asset', 'liability', 'equity')
+                AND c.type IN ('aktiva', 'pasiva', 'modal')
             GROUP BY jm.id_period, p.code, p.name, p.year, p.month, c.type
         ");
     }

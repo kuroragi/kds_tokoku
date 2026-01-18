@@ -73,6 +73,11 @@ class Period extends Model
     }
 
     // Accessors
+    public function getPeriodNameAttribute()
+    {
+        return $this->name ?: sprintf('%s %d', date('F', mktime(0, 0, 0, $this->month, 1)), $this->year);
+    }
+
     public function getIsCurrentAttribute()
     {
         $now = now();

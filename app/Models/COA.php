@@ -16,26 +16,30 @@ class COA extends Model
         'code',
         'name',
         'type',
-        'parent_id',
+        'parent_code',
         'level',
+        'order',
         'description',
         'is_active',
+        'is_leaf_account',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_leaf_account' => 'boolean',
         'level' => 'integer',
+        'order' => 'integer',
     ];
 
     // Relationships
     public function parent()
     {
-        return $this->belongsTo(COA::class, 'parent_id');
+        return $this->belongsTo(COA::class, 'parent_code', 'id');
     }
 
     public function children()
     {
-        return $this->hasMany(COA::class, 'parent_id');
+        return $this->hasMany(COA::class, 'parent_code', 'id');
     }
 
     public function journals()
@@ -52,5 +56,26 @@ class COA extends Model
     public function scopeByType($query, $type)
     {
         return $query->where('type', $type);
+    }
+    
+    public function scopeLeafAccounts($query)
+    {
+        return $query->where('is_leaf_account', true);
+    }
+    
+    public function scopeParentAccounts($query)
+    {
+        return $query->where('is_leaf_account', false);
+    }
+    
+    // Helper Methods
+    public function isLeafAccount()
+    {
+        return $this->is_leaf_account;
+    }
+    
+    public function isParentAccount()
+    {
+        return !$this->is_leaf_account;
     }
 }

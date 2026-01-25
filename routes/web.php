@@ -4,6 +4,8 @@ use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PageController;
 use App\Livewire\Coa\CoaList;
+use App\Mail\SendMail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -20,4 +22,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('journal', [AccountingController::class, 'journal'])->name('journal');
 
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+});
+
+
+Route::get('/mail-testing', function() {
+    $details = [
+        'subject' => 'Mail from KDS Tokoku',
+        'content' => 'This is for testing email using smtp'
+    ];
+    
+    try {
+        $mail = Mail::to('uum1612@gmail.com')->queue(new SendMail($details));
+
+        return 'Mail has been sent!';
+    } catch (Exception $e) {
+        // Log the error message
+        return $e->getMessage();
+    }
 });

@@ -2,36 +2,45 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginRequest;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    public function authenticate(Request $request)
+    public function authenticate(LoginRequest $request, AuthService $authService)
     {
-        $request->validate([
-            'login' => 'required',
-            'password' => 'required'
-        ]);
+        $authService->login(
+            $request->credentials()['login'],
+            $request->credentials()['password'],
+            $request->remember()
+        );
 
-        $credentials = $request->only('login', 'password');
-        $remember = $request->filled('remember');
+        return redirect()->intended('dashboard');
 
-        // cek apakah input berupa email atau username
-        $fieldType = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-        if (Auth::attempt([$fieldType => $credentials['login'], 'password' => $credentials['password']], $remember)) {
-            $request->session()->regenerate();
-            return redirect()->intended('dashboard'); // sesuaikan route
-        }
+        // $request->validate([
+        //     'login' => 'required',
+        //     'password' => 'required'
+        // ]);
 
-        return back()->with('error', 'Credential yang anda masukkan tidak cocok!');
+        // $credentials = $request->only('login', 'password');
+        // $remember = $request->filled('remember');
+
+        // // cek apakah input berupa email atau username
+        // $fieldType = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        // if (Auth::attempt([$fieldType => $credentials['login'], 'password' => $credentials['password']], $remember)) {
+        //     $request->session()->regenerate();
+        //     return redirect()->intended('dashboard'); // sesuaikan route
+        // }
+
+        // return back()->with('error', 'Credential yang anda masukkan tidak cocok!');
     }
 
-    public function logout()
+    public function logout(AuthService $authService)
     {
-        Auth::logout();
-        request()->session()->invalidate();
-        Request()->session()->regenerateToken();
+        $authService->logout();    
+
         return redirect()->route('login');
     }
 }

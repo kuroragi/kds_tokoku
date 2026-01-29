@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class AuthService
 {
@@ -17,9 +20,37 @@ class AuthService
 
     public function login(string $login, string $password, bool $remember = false): void
     {
-        $field = 
+        try{
+            $field = $this->detectLoginField($login);
 
-        request()->session()->regenerate();
+            if(!Auth::attempt([$field => $login, 'password' => $password], $remember)){
+                throw ValidationException::withMessages([
+                    'login' => 'Credential yang anda masukkan tidak cocok!',
+                ]);
+            }
+
+            request()->session()->regenerate();
+
+        } catch (QueryException $e) {
+            // database error (connection refused, timeout, dll)
+            Log::error('Login failed: database error', [
+                'exception' => $e,
+            ]);
+
+            throw ValidationException::withMessages([
+                'login' => 'Sistem sedang bermasalah. Silakan coba beberapa saat lagi.',
+            ]);
+
+        } catch (Throwable $e) {
+            // error tak terduga
+            Log::critical('Unexpected login error', [
+                'exception' => $e,
+            ]);
+
+            throw ValidationException::withMessages([
+                'login' => 'Terjadi kesalahan sistem. Silakan hubungi administrator.',
+            ]);
+        }
     }
 
     public function detectLoginField(string $login): string

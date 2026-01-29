@@ -32,7 +32,7 @@ class LoginRequest extends FormRequest
         return $this->only('login', 'password');
     }
 
-    public function wantsRemember() : bool {
+    public function remember() : bool {
         return $this->boolean('remember');
     }
 }

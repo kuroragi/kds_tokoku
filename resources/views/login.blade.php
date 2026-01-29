@@ -50,8 +50,13 @@
                                             @csrf
                                             <div class="mb-3">
                                                 <label for="login" class="form-label">Username / Alamat Email</label>
+                                                @if ($errors->has('login'))
+                                                <div class="alert alert-danger">
+                                                    {{ $errors->first('login') }}
+                                                </div>
+                                                @endif
                                                 <input class="form-control" type="text" name="login" id="login" required
-                                                    placeholder="Masukkan Username / Email">
+                                                    placeholder="Masukkan Username / Email" value="{{ old('login') }}">
                                             </div>
                                             <div class="mb-3">
                                                 <a href="auth-forgotpw.html" class="text-muted float-end"><small>Lupa

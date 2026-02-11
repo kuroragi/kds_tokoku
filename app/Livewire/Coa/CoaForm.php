@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Coa;
 
+use App\Http\Requests\COARequest;
 use App\Models\COA;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Kuroragi\GeneralHelper\ActivityLog\ActivityLogger;
+use App\Services\COAService;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class CoaForm extends Component
@@ -16,201 +16,149 @@ class CoaForm extends Component
     public $name = '';
     public $parent_code = null;
     public $type = 'aktiva';
+    public $description = '';
     public $is_active = true;
     public $is_leaf_account = false;
+    public $maxOrder = 1;
     public $order = 1;
+    public $orderOptions = [];
     public $level = 0;
 
     // UI State
     public $showModal = false;
     public $isEditing = false;
 
-    // Validation Rules
-    protected function rules()
+    protected function rules(): array
     {
-        $rules = [
-            'name' => 'required|string|max:255',
-            'parent_code' => 'nullable|exists:c_o_a_s,id',
-            'type' => 'required|in:aktiva,pasiva,modal,pendapatan,beban',
-            'is_active' => 'boolean',
-            'is_leaf_account' => 'boolean',
-            'order' => 'required|integer|min:1'
-        ];
-
-        // Add unique rule for code
-        if ($this->isEditing) {
-            $rules['code'] = 'required|string|max:255|unique:c_o_a_s,code,' . $this->coaId;
-        } else {
-            $rules['code'] = 'required|string|max:255|unique:c_o_a_s,code';
-        }
-
-        return $rules;
+        return $this->getCoaRequest()->rules();
     }
 
-    // Custom validation messages
-    protected $messages = [
-        'code.required' => 'Account code is required.',
-        'code.unique' => 'This account code already exists.',
-        'name.required' => 'Account name is required.',
-        'type.required' => 'Account type is required.',
-        'type.in' => 'Invalid account type.',
-        'parent_code.exists' => 'Parent account not found.',
-        'order.required' => 'Order is required.',
-        'order.min' => 'Order must be at least 1.'
-    ];
+    protected function messages(): array
+    {
+        return $this->getCoaRequest()->messages();
+    }
 
-    // Listeners
+    protected function getCoaRequest(): COARequest
+    {
+        $request = new COARequest();
+
+        if ($this->isEditing && $this->coaId) {
+            $request->setRouteResolver(fn() => new class($this->coaId) {
+                public function __construct(private $coaId) {}
+                public function parameter($key) { return $key === 'coa' ? $this->coaId : null; }
+            });
+        }
+
+        return $request;
+    }
+
     protected $listeners = [
         'openCoaModal' => 'openModal',
         'editCoa' => 'edit'
     ];
 
-    /**
-     * Real-time validation
-     */
-    public function updated($propertyName)
+    public function updated($propertyName, $value): void
     {
-        // Skip validation if modal is being closed
         if (!$this->showModal) {
             return;
         }
 
-        // Only validate form fields
-        if (in_array($propertyName, ['code', 'name', 'parent_code', 'type', 'order'])) {
+        // Normalize parent_code: empty string to null
+        if ($propertyName === 'parent_code') {
+            $this->parent_code = $this->parent_code !== '' && $this->parent_code !== null
+                ? (int) $this->parent_code
+                : null;
+            $this->recalculateOrderOptions();
+        }
+
+        $formFields = ['code', 'name', 'parent_code', 'type', 'order', 'description'];
+        if (in_array($propertyName, $formFields)) {
             $this->validateOnly($propertyName);
         }
     }
 
-    /**
-     * Calculate level when parent changes and determine if it should be leaf account
-     */
-    public function updatedParentCode($value)
+    protected function recalculateOrderOptions(): void
     {
-        if ($value) {
-            $parent = COA::find($value);
-            $this->level = $parent ? ($parent->level + 1) : 0;
-            // By default, new accounts under parent are leaf accounts unless they will have children
-            $this->is_leaf_account = true;
-        } else {
-            $this->level = 0;
-            // Top level accounts are usually parent accounts
-            $this->is_leaf_account = false;
+        $query = $this->parent_code
+            ? COA::where('parent_code', $this->parent_code)
+            : COA::whereNull('parent_code');
+
+        // When editing, exclude current item from sibling count
+        // then the max becomes siblingCount (others) + 1 (self) = siblingCount + 1... 
+        // which equals total siblings including self. Same as just counting all.
+        // But if parent changed during edit, item is NOT in new parent group,
+        // so we need +1 for the new slot.
+        $siblingCount = $query->when($this->isEditing && $this->coaId, function ($q) {
+            $q->where('id', '!=', $this->coaId);
+        })->count();
+
+        // Always add 1: for new item (create) or for the item being placed (edit)
+        $this->maxOrder = $siblingCount + 1;
+        $this->maxOrder = max($this->maxOrder, 1);
+
+        $this->orderOptions = collect(range(1, $this->maxOrder))
+            ->mapWithKeys(fn($i) => [$i => "urutan ke-$i"])->toArray();
+
+        // Clamp order to valid range
+        if ($this->order > $this->maxOrder) {
+            $this->order = $this->maxOrder;
         }
     }
 
-    /**
-     * Open modal for creating new COA
-     */
-    public function openModal()
+    public function openModal(): void
     {
-        $this->isEditing ? '' : $this->resetForm();
+        if (!$this->isEditing) {
+            $this->resetForm();
+        }
+
+        $this->recalculateOrderOptions();
         $this->showModal = true;
     }
 
-    /**
-     * Open modal for editing COA
-     */
-    public function edit($coaId)
+    public function edit($coaId): void
     {
-        // Set editing state FIRST
         $this->isEditing = true;
-        
-        try {
-            $coa = COA::findOrFail($coaId);
-            
-            $this->coaId = $coa->id;
-            $this->code = $coa->code;
-            $this->name = $coa->name;
-            $this->parent_code = $coa->parent_code;
-            $this->type = $coa->type;
-            $this->is_active = $coa->is_active;
-            $this->is_leaf_account = $coa->is_leaf_account;
-            $this->order = $coa->order;
-            $this->level = $coa->level ?? 0;
-            
-            $this->showModal = true;
-            
-        } catch (\Throwable $th) {
+
+        $coa = COA::find($coaId);
+
+        if (!$coa) {
             $this->dispatch('showAlert', [
                 'type' => 'error',
-                'message' => 'Chart of Account not found.'
+                'message' => 'Chart of Account tidak ditemukan.'
             ]);
+            return;
         }
+
+        $this->coaId = $coa->id;
+        $this->code = $coa->code;
+        $this->name = $coa->name;
+        $this->parent_code = $coa->parent_code;
+        $this->type = $coa->type;
+        $this->description = $coa->description ?? '';
+        $this->is_active = $coa->is_active;
+        $this->is_leaf_account = $coa->is_leaf_account;
+        $this->order = $coa->order;
+        $this->level = $coa->level ?? 0;
+
+        $this->recalculateOrderOptions();
+        $this->showModal = true;
     }
 
-    /**
-     * Save COA (create or update)
-     */
-    public function save()
+    public function save(COAService $coaService): void
     {
         $this->validate();
 
-        DB::beginTransaction();
-        
         try {
-            // Calculate level if parent exists
-            if ($this->parent_code) {
-                $parent = COA::find($this->parent_code);
-                $this->level = $parent ? ($parent->level + 1) : 0;
-            } else {
-                $this->level = 0;
-            }
-
-            // Reorder logic: shift orders for siblings
-            // Get all COAs with the same parent and order >= new order
-            COA::where('parent_code', $this->parent_code)
-                ->where('order', '>=', $this->order)
-                ->when($this->isEditing, function ($query) {
-                    // Exclude current COA when editing
-                    $query->where('id', '!=', $this->coaId);
-                })
-                ->increment('order'); // Add +1 to all affected orders
-
-            $data = [
-                'code' => $this->code,
-                'name' => $this->name,
-                'parent_code' => $this->parent_code,
-                'type' => $this->type,
-                'is_active' => $this->is_active,
-                'is_leaf_account' => $this->is_leaf_account,
-                'order' => $this->order,
-                'level' => $this->level
-            ];
+            $data = $this->getFormData();
 
             if ($this->isEditing) {
-                // Update existing COA
                 $coa = COA::findOrFail($this->coaId);
-                $coa->update($data);
-
-                $message = "Chart of Account '{$coa->name}' has been updated successfully.";
-                $action = 'coa_updated';
-                
+                $coaService->update($coa, $data);
+                $message = "Chart of Account '{$coa->name}' berhasil diperbarui.";
             } else {
-                // Create new COA
-                $coa = COA::create($data);
-
-                $message = "Chart of Account '{$coa->name}' has been created successfully.";
-                $action = 'coa_created';
+                $coa = $coaService->create($data);
+                $message = "Chart of Account '{$coa->name}' berhasil dibuat.";
             }
-
-            // Log the activity
-            $logger = new ActivityLogger(storage_path('logs/activity'));
-            $logger->log([
-                'level' => 'info',
-                'category' => 'coa_management',
-                'message' => $this->isEditing ? 'Chart of Account updated successfully' : 'Chart of Account created successfully',
-                'meta' => [
-                    'action' => $action,
-                    'coa_id' => $coa->id,
-                    'coa_code' => $coa->code,
-                    'coa_name' => $coa->name,
-                    'coa_type' => $coa->type,
-                    'user_id' => Auth::id(),
-                    'user_name' => Auth::user()->name
-                ]
-            ]);
-
-            DB::commit();
 
             $this->dispatch('showAlert', [
                 'type' => 'success',
@@ -220,35 +168,42 @@ class CoaForm extends Component
             $this->dispatch('refreshCoaList');
             $this->closeModal();
 
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            
+        } catch (ValidationException $e) {
             $this->dispatch('showAlert', [
                 'type' => 'error',
-                'message' => 'Failed to save Chart of Account.'. $th->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
 
-    /**
-     * Close modal and reset form
-     */
-    public function closeModal()
+    protected function getFormData(): array
+    {
+        return [
+            'code' => $this->code,
+            'name' => $this->name,
+            'type' => $this->type,
+            'parent_code' => $this->parent_code,
+            'order' => $this->order,
+            'description' => $this->description,
+            'is_active' => $this->is_active,
+            'is_leaf_account' => $this->is_leaf_account,
+        ];
+    }
+
+    public function closeModal(): void
     {
         $this->showModal = false;
         $this->resetForm();
     }
 
-    /**
-     * Reset form to initial state
-     */
-    private function resetForm()
+    private function resetForm(): void
     {
         $this->coaId = null;
         $this->code = '';
         $this->name = '';
         $this->parent_code = null;
         $this->type = 'aktiva';
+        $this->description = '';
         $this->is_active = true;
         $this->is_leaf_account = false;
         $this->order = 1;
@@ -258,17 +213,10 @@ class CoaForm extends Component
         $this->resetValidation();
     }
 
-    /**
-     * Get parent options for dropdown
-     */
-    public function getParentOptionsProperty()
+    public function getParentOptionsProperty(COAService $coaService)
     {
-        return COA::when($this->isEditing, function ($query) {
-                // Exclude current COA and its descendants when editing
-                $query->where('id', '!=', $this->coaId);
-            })
-            ->orderBy('code')
-            ->get();
+        $excludeId = $this->isEditing ? $this->coaId : null;
+        return $coaService->getParentOptions($excludeId);
     }
 
     public function render()

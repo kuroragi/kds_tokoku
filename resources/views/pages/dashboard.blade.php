@@ -234,3 +234,8 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+    <!-- Apex Charts js -->
+<script src="/assets/vendor/apexcharts/apexcharts.min.js"></script>
+@endpush

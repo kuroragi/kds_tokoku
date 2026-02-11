@@ -12,7 +12,7 @@
                     <button type="button" class="btn-close" wire:click="closeModal"></button>
                 </div>
 
-                <form wire:submit="save">
+                    <form wire:submit="save">
                     <div class="modal-body">
                         <div class="row">
                             <!-- Account Code -->
@@ -21,7 +21,7 @@
                                     Account Code <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" class="form-control @error('code') is-invalid @enderror" id="code"
-                                    wire:model="code" placeholder="e.g., 1-1101" required>
+                                    wire:model.live="code" placeholder="e.g., 1-1101" required>
                                 @error('code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -34,7 +34,7 @@
                                     Account Name <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" class="form-control @error('name') is-invalid @enderror" id="name"
-                                    wire:model="name" placeholder="e.g., Cash in Bank" required>
+                                    wire:model.live="name" placeholder="e.g., Cash in Bank" required>
                                 @error('name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -48,7 +48,7 @@
                                     Account Type <span class="text-danger">*</span>
                                 </label>
                                 <select class="form-select @error('type') is-invalid @enderror" id="type"
-                                    wire:model="type" required>
+                                    wire:model.live="type" required>
                                     @foreach($types as $key => $label)
                                     <option value="{{ $key }}">{{ $label }}</option>
                                     @endforeach
@@ -86,8 +86,12 @@
                                 <label for="order" class="form-label">
                                     Display Order <span class="text-danger">*</span>
                                 </label>
-                                <input type="number" class="form-control @error('order') is-invalid @enderror"
-                                    id="order" wire:model="order" min="1" required>
+                                <select class="form-select @error('order') is-invalid @enderror" id="order" wire:model.live="order" min="1" required>
+                                    <option value="">Pilih Urutan</option>
+                                    @foreach ($orderOptions as $key => $option)
+                                        <option value="{{ $key }}">{{ $option }}</option>
+                                    @endforeach
+                                </select>
                                 @error('order')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -167,6 +171,19 @@
                             </div>
                         </div>
                         @endif
+
+                        <!-- Description -->
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control @error('description') is-invalid @enderror" id="description"
+                                    wire:model.blur="description" rows="3" placeholder="Optional account description" maxlength="500"></textarea>
+                                @error('description')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">Max 500 characters</small>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="modal-footer">
@@ -183,7 +200,7 @@
                             </span>
                         </button>
                     </div>
-                </form>
+                    </form>
             </div>
         </div>
     </div>

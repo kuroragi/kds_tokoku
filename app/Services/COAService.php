@@ -181,7 +181,8 @@ class COAService
 
     public function getParentOptions(?int $excludeId = null)
     {
-        return COA::when($excludeId, fn($query) => $query->where('id', '!=', $excludeId))
+        return COA::where('is_leaf_account', false)
+            ->when($excludeId, fn($query) => $query->where('id', '!=', $excludeId))
             ->orderBy('code')
             ->get();
     }

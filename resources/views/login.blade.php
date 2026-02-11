@@ -67,7 +67,7 @@
                                             </div>
                                             <div class="mb-3">
                                                 <div class="form-check">
-                                                    <input type="checkbox" name="remember" class="form-check-input"
+                                                    <input type="checkbox" name="remember" value="1" class="form-check-input"
                                                         id="checkbox-signin">
                                                     <label class="form-check-label" for="checkbox-signin">Ingat
                                                         Saya</label>
@@ -130,7 +130,5 @@
 
 </body>
 
-
-<!-- Mirrored from techzaa.in/velonic/layouts/auth-login.html by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 09 Sep 2025 17:06:03 GMT -->
 
 </html>

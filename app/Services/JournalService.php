@@ -282,7 +282,13 @@ class JournalService
     public function generateJournalNumber($date, $type = 'general')
     {
         $date = \Carbon\Carbon::parse($date);
-        $prefix = $type === 'adjustment' ? 'AJE' : 'JRN';
+        $prefixMap = [
+            'general' => 'JRN',
+            'adjustment' => 'AJE',
+            'tax' => 'TAX',
+            'closing' => 'CLO',
+        ];
+        $prefix = $prefixMap[$type] ?? 'JRN';
         $year = $date->format('Y');
         $month = $date->format('m');
         

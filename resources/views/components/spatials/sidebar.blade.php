@@ -413,8 +413,20 @@
                                 <i class="ri-file-edit-line me-1"></i> Neraca Penyesuaian
                             </a>
                         </li>
-                        <li>
-                            <a href="javascript:">Laporan Keuangan</a>
+                        <li class="{{ request()->routeIs('fiscal-correction') ? 'active' : '' }}">
+                            <a href="{{ route('fiscal-correction') }}">
+                                <i class="ri-exchange-line me-1"></i> Koreksi Fiskal
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('tax-calculation') ? 'active' : '' }}">
+                            <a href="{{ route('tax-calculation') }}">
+                                <i class="ri-government-line me-1"></i> Perhitungan Pajak
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('closing') ? 'active' : '' }}">
+                            <a href="{{ route('closing') }}">
+                                <i class="ri-book-line me-1"></i> Closing Periode
+                            </a>
                         </li>
                     </ul>
                 </div>

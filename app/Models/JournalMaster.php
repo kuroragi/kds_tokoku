@@ -68,6 +68,16 @@ class JournalMaster extends Model
         return $query->where('type', $type);
     }
 
+    public function scopeTax($query)
+    {
+        return $query->where('type', 'tax');
+    }
+
+    public function scopeClosing($query)
+    {
+        return $query->where('type', 'closing');
+    }
+
     // Accessors & Mutators
     public function getIsBalancedAttribute()
     {

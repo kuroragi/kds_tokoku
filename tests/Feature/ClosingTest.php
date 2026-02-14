@@ -145,16 +145,16 @@ class ClosingTest extends TestCase
     /** @test */
     public function closing_page_accessible()
     {
-        $response = $this->get(route('closing'));
+        $response = $this->get(route('tax-closing'));
         $response->assertStatus(200);
-        $response->assertSee('Closing Periode');
+        $response->assertSee('Perpajakan');
     }
 
     /** @test */
     public function closing_page_requires_authentication()
     {
         auth()->logout();
-        $response = $this->get(route('closing'));
+        $response = $this->get(route('tax-closing'));
         $response->assertRedirect(route('login'));
     }
 

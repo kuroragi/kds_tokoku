@@ -38,15 +38,7 @@ class AccountingController extends Controller
         return view('pages.accounting.adjusted-trial-balance');
     }
 
-    public function fiscalCorrection(){
-        return view('pages.accounting.fiscal-correction');
-    }
-
-    public function taxCalculation(){
-        return view('pages.accounting.tax-calculation');
-    }
-
-    public function closing(){
-        return view('pages.accounting.closing');
+    public function taxClosing(){
+        return view('pages.accounting.tax-closing');
     }
 }

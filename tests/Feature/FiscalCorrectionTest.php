@@ -48,16 +48,16 @@ class FiscalCorrectionTest extends TestCase
     /** @test */
     public function fiscal_correction_page_accessible()
     {
-        $response = $this->get(route('fiscal-correction'));
+        $response = $this->get(route('tax-closing'));
         $response->assertStatus(200);
-        $response->assertSee('Koreksi Fiskal');
+        $response->assertSee('Perpajakan');
     }
 
     /** @test */
     public function fiscal_correction_page_requires_authentication()
     {
         auth()->logout();
-        $response = $this->get(route('fiscal-correction'));
+        $response = $this->get(route('tax-closing'));
         $response->assertRedirect(route('login'));
     }
 

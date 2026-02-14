@@ -137,16 +137,16 @@ class TaxCalculationTest extends TestCase
     /** @test */
     public function tax_calculation_page_accessible()
     {
-        $response = $this->get(route('tax-calculation'));
+        $response = $this->get(route('tax-closing'));
         $response->assertStatus(200);
-        $response->assertSee('Perhitungan Pajak');
+        $response->assertSee('Perpajakan');
     }
 
     /** @test */
     public function tax_calculation_page_requires_authentication()
     {
         auth()->logout();
-        $response = $this->get(route('tax-calculation'));
+        $response = $this->get(route('tax-closing'));
         $response->assertRedirect(route('login'));
     }
 

@@ -408,8 +408,10 @@
                                 <i class="ri-file-edit-line me-1"></i> Jurnal Penyesuaian
                             </a>
                         </li>
-                        <li>
-                            <a href="javascript:">Neraca Penyesuaian</a>
+                        <li class="{{ request()->routeIs('adjusted-trial-balance') ? 'active' : '' }}">
+                            <a href="{{ route('adjusted-trial-balance') }}">
+                                <i class="ri-file-edit-line me-1"></i> Neraca Penyesuaian
+                            </a>
                         </li>
                         <li>
                             <a href="javascript:">Laporan Keuangan</a>

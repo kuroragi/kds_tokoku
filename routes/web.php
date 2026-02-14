@@ -27,6 +27,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('adjustment-journal', [AccountingController::class, 'adjustmentJournal'])->name('adjustment-journal');
     Route::get('trial-balance', [AccountingController::class, 'trialBalance'])->name('trial-balance');
     Route::get('income-statement', [AccountingController::class, 'incomeStatement'])->name('income-statement');
+    Route::get('adjusted-trial-balance', [AccountingController::class, 'adjustedTrialBalance'])->name('adjusted-trial-balance');
 
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 });

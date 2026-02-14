@@ -193,6 +193,134 @@ class FinancialReportService
     }
 
     /**
+     * Base query filtered by journal type
+     */
+    private function baseQueryByType(string $type)
+    {
+        return $this->baseQuery()->where('journal_masters.type', $type);
+    }
+
+    /**
+     * Get Adjusted Trial Balance (Neraca Penyesuaian / Worksheet)
+     * Shows: Original Trial Balance | Adjustments | Adjusted Trial Balance
+     *
+     * @param array $filters ['period_id' => ?, 'date_from' => ?, 'date_to' => ?]
+     * @return array
+     */
+    public function getAdjustedTrialBalance(array $filters = []): array
+    {
+        // 1) Get all active leaf accounts so every row appears even if zero
+        $allAccounts = COA::where('is_active', true)
+            ->where('is_leaf_account', true)
+            ->orderBy('code')
+            ->get()
+            ->keyBy('id');
+
+        // 2) General journal totals (neraca saldo)
+        $generalQuery = $this->baseQueryByType('general');
+        $this->applyFilters($generalQuery, $filters);
+
+        $generalData = $generalQuery->select([
+                'c_o_a_s.id as coa_id',
+                DB::raw('SUM(journals.debit) as total_debit'),
+                DB::raw('SUM(journals.credit) as total_credit'),
+            ])
+            ->groupBy('c_o_a_s.id')
+            ->get()
+            ->keyBy('coa_id');
+
+        // 3) Adjustment journal totals (penyesuaian)
+        $adjustmentQuery = $this->baseQueryByType('adjustment');
+        $this->applyFilters($adjustmentQuery, $filters);
+
+        $adjustmentData = $adjustmentQuery->select([
+                'c_o_a_s.id as coa_id',
+                DB::raw('SUM(journals.debit) as total_debit'),
+                DB::raw('SUM(journals.credit) as total_credit'),
+            ])
+            ->groupBy('c_o_a_s.id')
+            ->get()
+            ->keyBy('coa_id');
+
+        // 4) Build worksheet rows
+        $rows = collect();
+
+        foreach ($allAccounts as $coaId => $coa) {
+            $gen = $generalData->get($coaId);
+            $adj = $adjustmentData->get($coaId);
+
+            $genDebit = $gen ? (float) $gen->total_debit : 0;
+            $genCredit = $gen ? (float) $gen->total_credit : 0;
+            $adjDebit = $adj ? (float) $adj->total_debit : 0;
+            $adjCredit = $adj ? (float) $adj->total_credit : 0;
+
+            // Skip accounts with no activity at all
+            if ($genDebit == 0 && $genCredit == 0 && $adjDebit == 0 && $adjCredit == 0) {
+                continue;
+            }
+
+            $genBalance = $genDebit - $genCredit;
+            $adjBalance = $adjDebit - $adjCredit;
+
+            // Normalize to debit/credit columns based on account normal balance
+            $isDebitNormal = in_array($coa->type, ['aktiva', 'beban']);
+
+            // Neraca Saldo columns
+            $nsDebit = 0;
+            $nsCredit = 0;
+            if ($isDebitNormal) {
+                $nsDebit = $genBalance >= 0 ? $genBalance : 0;
+                $nsCredit = $genBalance < 0 ? abs($genBalance) : 0;
+            } else {
+                $nsDebit = $genBalance > 0 ? $genBalance : 0;
+                $nsCredit = $genBalance <= 0 ? abs($genBalance) : 0;
+            }
+
+            // Penyesuaian columns (raw debit/credit)
+            $penyDebit = $adjDebit;
+            $penyCredit = $adjCredit;
+
+            // Neraca Saldo Disesuaikan
+            $combinedBalance = $genBalance + $adjBalance;
+            $nsdDebit = 0;
+            $nsdCredit = 0;
+            if ($isDebitNormal) {
+                $nsdDebit = $combinedBalance >= 0 ? $combinedBalance : 0;
+                $nsdCredit = $combinedBalance < 0 ? abs($combinedBalance) : 0;
+            } else {
+                $nsdDebit = $combinedBalance > 0 ? $combinedBalance : 0;
+                $nsdCredit = $combinedBalance <= 0 ? abs($combinedBalance) : 0;
+            }
+
+            $rows->push((object) [
+                'coa_id' => $coaId,
+                'coa_code' => $coa->code,
+                'coa_name' => $coa->name,
+                'coa_type' => $coa->type,
+                'ns_debit' => $nsDebit,
+                'ns_credit' => $nsCredit,
+                'adj_debit' => $penyDebit,
+                'adj_credit' => $penyCredit,
+                'nsd_debit' => $nsdDebit,
+                'nsd_credit' => $nsdCredit,
+            ]);
+        }
+
+        return [
+            'accounts' => $rows,
+            'total_ns_debit' => $rows->sum('ns_debit'),
+            'total_ns_credit' => $rows->sum('ns_credit'),
+            'total_adj_debit' => $rows->sum('adj_debit'),
+            'total_adj_credit' => $rows->sum('adj_credit'),
+            'total_nsd_debit' => $rows->sum('nsd_debit'),
+            'total_nsd_credit' => $rows->sum('nsd_credit'),
+            'ns_balanced' => abs($rows->sum('ns_debit') - $rows->sum('ns_credit')) < 0.01,
+            'adj_balanced' => abs($rows->sum('adj_debit') - $rows->sum('adj_credit')) < 0.01,
+            'nsd_balanced' => abs($rows->sum('nsd_debit') - $rows->sum('nsd_credit')) < 0.01,
+        ];
+    }
+
+    /**
      * Apply common filters to query
      */
     private function applyFilters($query, array $filters)

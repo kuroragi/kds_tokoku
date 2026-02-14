@@ -33,4 +33,8 @@ class AccountingController extends Controller
     public function incomeStatement(){
         return view('pages.accounting.income-statement');
     }
+
+    public function adjustedTrialBalance(){
+        return view('pages.accounting.adjusted-trial-balance');
+    }
 }

@@ -17,60 +17,12 @@ class GeneralLedgerIndex extends Component
     public $dateFrom = '';
     public $dateTo = '';
 
-    // UI State
-    public $selectedCoa = null;
-    public $showDetail = false;
-
     /**
-     * Reset pagination/state when filters change
+     * Reset COA filter when COA type changes
      */
-    public function updatedFilterPeriod()
-    {
-        $this->resetDetail();
-    }
-
-    public function updatedFilterCoa()
-    {
-        $this->resetDetail();
-    }
-
     public function updatedFilterCoaType()
     {
         $this->filterCoa = '';
-        $this->resetDetail();
-    }
-
-    public function updatedDateFrom()
-    {
-        $this->resetDetail();
-    }
-
-    public function updatedDateTo()
-    {
-        $this->resetDetail();
-    }
-
-    /**
-     * View detail ledger for a specific COA
-     */
-    public function viewDetail($coaId)
-    {
-        $this->selectedCoa = COA::find($coaId);
-        $this->showDetail = true;
-    }
-
-    /**
-     * Go back to summary view
-     */
-    public function backToSummary()
-    {
-        $this->resetDetail();
-    }
-
-    private function resetDetail()
-    {
-        $this->selectedCoa = null;
-        $this->showDetail = false;
     }
 
     /**
@@ -106,50 +58,6 @@ class GeneralLedgerIndex extends Component
     }
 
     /**
-     * Get detail ledger entries for the selected COA
-     */
-    public function getDetailDataProperty()
-    {
-        if (!$this->selectedCoa) {
-            return collect();
-        }
-
-        $query = Journal::query()
-            ->join('journal_masters', 'journals.id_journal_master', '=', 'journal_masters.id')
-            ->leftJoin('periods', 'journal_masters.id_period', '=', 'periods.id')
-            ->where('journals.id_coa', $this->selectedCoa->id)
-            ->where('journal_masters.status', 'posted')
-            ->whereNull('journals.deleted_at')
-            ->whereNull('journal_masters.deleted_at');
-
-        $this->applyFilters($query);
-
-        $entries = $query->select([
-                'journals.id',
-                'journal_masters.journal_no',
-                'journal_masters.journal_date',
-                'journal_masters.reference',
-                'journals.description',
-                'journals.debit',
-                'journals.credit',
-                'periods.name as period_name',
-            ])
-            ->orderBy('journal_masters.journal_date')
-            ->orderBy('journal_masters.journal_no')
-            ->orderBy('journals.sequence')
-            ->get();
-
-        // Calculate running balance
-        $runningBalance = 0;
-        foreach ($entries as $entry) {
-            $runningBalance += ($entry->debit - $entry->credit);
-            $entry->running_balance = $runningBalance;
-        }
-
-        return $entries;
-    }
-
-    /**
      * Apply common filters to query
      */
     private function applyFilters($query)
@@ -158,11 +66,11 @@ class GeneralLedgerIndex extends Component
             $query->where('journal_masters.id_period', $this->filterPeriod);
         }
 
-        if ($this->filterCoa && !$this->showDetail) {
+        if ($this->filterCoa) {
             $query->where('journals.id_coa', $this->filterCoa);
         }
 
-        if ($this->filterCoaType && !$this->showDetail) {
+        if ($this->filterCoaType) {
             $query->where('c_o_a_s.type', $this->filterCoaType);
         }
 
@@ -198,7 +106,6 @@ class GeneralLedgerIndex extends Component
         $this->filterCoaType = '';
         $this->dateFrom = '';
         $this->dateTo = '';
-        $this->resetDetail();
     }
 
     /**
@@ -243,7 +150,6 @@ class GeneralLedgerIndex extends Component
     {
         return view('livewire.general-ledger.general-ledger-index', [
             'summaryData' => $this->summaryData,
-            'detailData' => $this->detailData,
             'periods' => $this->periods,
             'coas' => $this->coas,
             'coaTypes' => $this->coaTypes,

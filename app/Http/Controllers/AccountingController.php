@@ -17,4 +17,8 @@ class AccountingController extends Controller
     public function generalLedger(){
         return view('pages.accounting.general-ledger');
     }
+
+    public function generalLedgerDetail(\App\Models\COA $coa){
+        return view('pages.accounting.general-ledger-detail', compact('coa'));
+    }
 }

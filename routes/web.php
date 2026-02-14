@@ -23,6 +23,7 @@ Route::middleware(['auth'])->group(function () {
 
     // accounting reports
     Route::get('general-ledger', [AccountingController::class, 'generalLedger'])->name('general-ledger');
+    Route::get('general-ledger/{coa}', [AccountingController::class, 'generalLedgerDetail'])->name('general-ledger.detail');
 
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 });

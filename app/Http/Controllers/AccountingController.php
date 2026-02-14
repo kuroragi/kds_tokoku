@@ -13,4 +13,8 @@ class AccountingController extends Controller
     public function journal(){
         return view('pages.accounting.journal');
     }
+
+    public function generalLedger(){
+        return view('pages.accounting.general-ledger');
+    }
 }

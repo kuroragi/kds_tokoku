@@ -388,8 +388,10 @@
                                 <i class="ri-file-list-3-line me-1"></i> Jurnal
                             </a>
                         </li>
-                        <li>
-                            <a href="javascript:">Buku Besar</a>
+                        <li class="{{ request()->routeIs('general-ledger') ? 'active' : '' }}">
+                            <a href="{{ route('general-ledger') }}">
+                                <i class="ri-book-open-line me-1"></i> Buku Besar
+                            </a>
                         </li>
                         <li>
                             <a href="javascript:">Neraca Saldo</a>

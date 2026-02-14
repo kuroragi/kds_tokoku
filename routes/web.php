@@ -21,6 +21,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('coa', [AccountingController::class, 'coa'])->name('coa');
     Route::get('journal', [AccountingController::class, 'journal'])->name('journal');
 
+    // accounting reports
+    Route::get('general-ledger', [AccountingController::class, 'generalLedger'])->name('general-ledger');
+
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 });
 

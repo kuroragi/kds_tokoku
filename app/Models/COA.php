@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Kuroragi\GeneralHelper\Traits\Blameable;
 
 class COA extends Model
 {
-    use SoftDeletes, Blameable;
+    use HasFactory, SoftDeletes, Blameable;
 
     protected $table = 'c_o_a_s';
 

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Kuroragi\GeneralHelper\Traits\Blameable;
 
 class JournalMaster extends Model
 {
-    use SoftDeletes, Blameable;
+    use HasFactory, SoftDeletes, Blameable;
 
     protected $fillable = [
         'id_period',

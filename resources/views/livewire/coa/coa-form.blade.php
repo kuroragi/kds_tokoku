@@ -110,18 +110,18 @@
                             <!-- Leaf Account Status -->
                             <div class="col-md-4 mb-3">
                                 <label for="is_leaf_account" class="form-label">
-                                    Account Type
+                                    Leaf Account
                                 </label>
                                 <div class="form-check form-switch mt-2">
                                     <input class="form-check-input" type="checkbox" role="switch" id="is_leaf_account"
-                                        wire:model="is_leaf_account">
+                                        wire:model.live="is_leaf_account">
                                     <label class="form-check-label" for="is_leaf_account">
-                                        {{ $is_leaf_account ? 'Leaf Account' : 'Parent Account' }}
+                                        {{ $is_leaf_account ? 'Ya (Akun Transaksi)' : 'Tidak (Akun Pengelompokan)' }}
                                     </label>
                                 </div>
                                 <small class="text-muted">
                                     <i class="ri-information-line"></i>
-                                    {{ $is_leaf_account ? 'Can be used for transactions' : 'For grouping only' }}
+                                    {{ $is_leaf_account ? 'Akun ini bisa digunakan untuk transaksi jurnal' : 'Akun ini hanya untuk pengelompokan (parent)' }}
                                 </small>
                             </div>
                         </div>

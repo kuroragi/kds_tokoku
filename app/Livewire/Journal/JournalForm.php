@@ -115,6 +115,7 @@ class JournalForm extends Component
         if (!$this->isEditing) {
             $this->resetForm();
             $this->generateJournalNumber();
+            $this->findMatchingPeriod();
         }
         $this->showModal = true;
     }

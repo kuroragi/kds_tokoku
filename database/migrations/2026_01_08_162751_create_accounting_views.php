@@ -10,9 +10,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Drop views first for compatibility with both MySQL and SQLite
+        $this->down();
+
         // 1. View untuk Rekap Journal per Periode
         DB::statement("
-            CREATE OR REPLACE VIEW view_journal_recap AS
+            CREATE VIEW view_journal_recap AS
             SELECT 
                 jm.id_period,
                 p.code as period_code,
@@ -32,7 +35,7 @@ return new class extends Migration
 
         // 2. View untuk Detail Journal dengan COA
         DB::statement("
-            CREATE OR REPLACE VIEW view_journal_details AS
+            CREATE VIEW view_journal_details AS
             SELECT 
                 j.id,
                 jm.id as journal_master_id,
@@ -63,7 +66,7 @@ return new class extends Migration
 
         // 3. View untuk Buku Besar (General Ledger)
         DB::statement("
-            CREATE OR REPLACE VIEW view_general_ledger AS
+            CREATE VIEW view_general_ledger AS
             SELECT 
                 c.id as coa_id,
                 c.code as coa_code,
@@ -89,7 +92,7 @@ return new class extends Migration
 
         // 4. View untuk Neraca Saldo (Trial Balance) per Periode
         DB::statement("
-            CREATE OR REPLACE VIEW view_trial_balance AS
+            CREATE VIEW view_trial_balance AS
             SELECT 
                 jm.id_period,
                 p.code as period_code,
@@ -125,7 +128,7 @@ return new class extends Migration
 
         // 5. View untuk Laporan Laba Rugi per Periode
         DB::statement("
-            CREATE OR REPLACE VIEW view_income_statement AS
+            CREATE VIEW view_income_statement AS
             SELECT 
                 jm.id_period,
                 p.code as period_code,
@@ -152,7 +155,7 @@ return new class extends Migration
 
         // 6. View untuk Laporan Neraca (Balance Sheet) per Periode
         DB::statement("
-            CREATE OR REPLACE VIEW view_balance_sheet AS
+            CREATE VIEW view_balance_sheet AS
             SELECT 
                 jm.id_period,
                 p.code as period_code,

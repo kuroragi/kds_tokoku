@@ -205,17 +205,38 @@ class COAService
         return COA::where('parent_code', $parentCode)->count();
     }
 
-    protected function reorderSiblings(?int $parentCode, int $order, ?int $excludeId = null): void
+    protected function reorderSiblings(?int $parentCode, int $targetOrder, ?int $excludeId = null): void
     {
-        COA::where('parent_code', $parentCode)
-            ->where('order', '>=', $order)
-            ->when($excludeId, fn($query) => $query->where('id', '!=', $excludeId))
-            ->increment('order');
+        // Get all siblings (excluding current item if editing), sorted by current order
+        $siblings = COA::when(
+                $parentCode !== null,
+                fn($q) => $q->where('parent_code', $parentCode),
+                fn($q) => $q->whereNull('parent_code')
+            )
+            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
+            ->orderBy('order')
+            ->get();
+
+        // Normalize orders sequentially, skipping targetOrder to reserve it
+        $newOrder = 1;
+        foreach ($siblings as $sibling) {
+            if ($newOrder == $targetOrder) {
+                $newOrder++; // Reserve this position for the new/moved item
+            }
+            $sibling->update(['order' => $newOrder]);
+            $newOrder++;
+        }
     }
 
     protected function normalizeOrder(?int $parentCode): void
     {
-        $siblings = COA::where('parent_code', $parentCode)->orderBy('order')->get();
+        $siblings = COA::when(
+                $parentCode !== null,
+                fn($q) => $q->where('parent_code', $parentCode),
+                fn($q) => $q->whereNull('parent_code')
+            )
+            ->orderBy('order')
+            ->get();
 
         foreach ($siblings as $index => $sibling) {
             $sibling->update(['order' => $index + 1]);

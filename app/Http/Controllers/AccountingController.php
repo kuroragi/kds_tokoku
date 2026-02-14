@@ -21,4 +21,12 @@ class AccountingController extends Controller
     public function generalLedgerDetail(\App\Models\COA $coa){
         return view('pages.accounting.general-ledger-detail', compact('coa'));
     }
+
+    public function trialBalance(){
+        return view('pages.accounting.trial-balance');
+    }
+
+    public function incomeStatement(){
+        return view('pages.accounting.income-statement');
+    }
 }

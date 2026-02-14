@@ -393,8 +393,15 @@
                                 <i class="ri-book-open-line me-1"></i> Buku Besar
                             </a>
                         </li>
-                        <li>
-                            <a href="javascript:">Neraca Saldo</a>
+                        <li class="{{ request()->routeIs('trial-balance') ? 'active' : '' }}">
+                            <a href="{{ route('trial-balance') }}">
+                                <i class="ri-scales-3-line me-1"></i> Neraca Saldo
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('income-statement') ? 'active' : '' }}">
+                            <a href="{{ route('income-statement') }}">
+                                <i class="ri-line-chart-line me-1"></i> Laba Rugi
+                            </a>
                         </li>
                         <li>
                             <a href="javascript:">Jurnal Penyesuaian</a>

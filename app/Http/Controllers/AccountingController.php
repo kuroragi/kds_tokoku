@@ -22,6 +22,10 @@ class AccountingController extends Controller
         return view('pages.accounting.general-ledger-detail', compact('coa'));
     }
 
+    public function adjustmentJournal(){
+        return view('pages.accounting.adjustment-journal');
+    }
+
     public function trialBalance(){
         return view('pages.accounting.trial-balance');
     }

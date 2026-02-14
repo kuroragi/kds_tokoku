@@ -12,6 +12,7 @@ class JournalMaster extends Model
     use HasFactory, SoftDeletes, Blameable;
 
     protected $fillable = [
+        'type',
         'id_period',
         'journal_no',
         'journal_date',
@@ -50,6 +51,21 @@ class JournalMaster extends Model
     public function scopeDraft($query)
     {
         return $query->where('status', 'draft');
+    }
+
+    public function scopeGeneral($query)
+    {
+        return $query->where('type', 'general');
+    }
+
+    public function scopeAdjustment($query)
+    {
+        return $query->where('type', 'adjustment');
+    }
+
+    public function scopeOfType($query, string $type)
+    {
+        return $query->where('type', $type);
     }
 
     // Accessors & Mutators

@@ -46,10 +46,12 @@ class JournalService
             }
             
             // Generate journal number
-            $journalNo = $this->generateJournalNumber($data['journal_date']);
+            $type = $data['type'] ?? 'general';
+            $journalNo = $this->generateJournalNumber($data['journal_date'], $type);
             
             // Create journal master
             $journalMaster = JournalMaster::create([
+                'type' => $type,
                 'journal_no' => $journalNo,
                 'journal_date' => $data['journal_date'],
                 'reference' => $data['reference'] ?? null,
@@ -274,12 +276,13 @@ class JournalService
      * Generate journal number
      * 
      * @param string $date
+     * @param string $type 'general' or 'adjustment'
      * @return string
      */
-    private function generateJournalNumber($date)
+    public function generateJournalNumber($date, $type = 'general')
     {
         $date = \Carbon\Carbon::parse($date);
-        $prefix = 'JRN';
+        $prefix = $type === 'adjustment' ? 'AJE' : 'JRN';
         $year = $date->format('Y');
         $month = $date->format('m');
         

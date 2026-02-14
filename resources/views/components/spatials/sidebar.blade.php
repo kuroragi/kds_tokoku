@@ -403,8 +403,10 @@
                                 <i class="ri-line-chart-line me-1"></i> Laba Rugi
                             </a>
                         </li>
-                        <li>
-                            <a href="javascript:">Jurnal Penyesuaian</a>
+                        <li class="{{ request()->routeIs('adjustment-journal') ? 'active' : '' }}">
+                            <a href="{{ route('adjustment-journal') }}">
+                                <i class="ri-file-edit-line me-1"></i> Jurnal Penyesuaian
+                            </a>
                         </li>
                         <li>
                             <a href="javascript:">Neraca Penyesuaian</a>

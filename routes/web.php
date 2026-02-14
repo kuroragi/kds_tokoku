@@ -24,6 +24,7 @@ Route::middleware(['auth'])->group(function () {
     // accounting reports
     Route::get('general-ledger', [AccountingController::class, 'generalLedger'])->name('general-ledger');
     Route::get('general-ledger/{coa}', [AccountingController::class, 'generalLedgerDetail'])->name('general-ledger.detail');
+    Route::get('adjustment-journal', [AccountingController::class, 'adjustmentJournal'])->name('adjustment-journal');
     Route::get('trial-balance', [AccountingController::class, 'trialBalance'])->name('trial-balance');
     Route::get('income-statement', [AccountingController::class, 'incomeStatement'])->name('income-statement');
 

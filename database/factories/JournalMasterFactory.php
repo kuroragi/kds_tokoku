@@ -24,6 +24,7 @@ class JournalMasterFactory extends Factory
         $amount = $this->faker->numberBetween(100000, 10000000);
 
         return [
+            'type' => 'general',
             'journal_no' => 'JRN/' . $date->format('Y') . '/' . $date->format('m') . '/' . str_pad($this->faker->unique()->numberBetween(1, 9999), 4, '0', STR_PAD_LEFT),
             'journal_date' => $date->format('Y-m-d'),
             'reference' => $this->faker->optional()->bothify('REF-####'),
@@ -34,6 +35,17 @@ class JournalMasterFactory extends Factory
             'status' => 'draft',
             'posted_at' => null,
         ];
+    }
+
+    /**
+     * Indicate that the journal is an adjustment journal.
+     */
+    public function adjustment(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => 'adjustment',
+            'journal_no' => str_replace('JRN/', 'AJE/', $attributes['journal_no']),
+        ]);
     }
 
     /**

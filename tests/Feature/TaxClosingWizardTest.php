@@ -478,4 +478,92 @@ class TaxClosingWizardTest extends TestCase
             ->call('goToStep', 5)
             ->assertSee('Tutup semua periode bulanan terlebih dahulu');
     }
+
+    // ======================================
+    // Wizard Auto-Start Step Detection
+    // ======================================
+
+    /** @test */
+    public function wizard_auto_starts_at_step_3_when_tax_saved()
+    {
+        TaxCalculation::create([
+            'year' => (int) date('Y'),
+            'commercial_profit' => 100000000,
+            'fiscal_profit' => 100000000,
+            'taxable_income' => 100000000,
+            'tax_rate' => 22.00,
+            'tax_amount' => 22000000,
+            'status' => 'draft',
+        ]);
+
+        Livewire::test(TaxClosingWizard::class)
+            ->assertSet('currentStep', 3);
+    }
+
+    /** @test */
+    public function wizard_auto_starts_at_step_4_when_tax_finalized()
+    {
+        TaxCalculation::create([
+            'year' => (int) date('Y'),
+            'commercial_profit' => 100000000,
+            'fiscal_profit' => 100000000,
+            'taxable_income' => 100000000,
+            'tax_rate' => 22.00,
+            'tax_amount' => 22000000,
+            'status' => 'finalized',
+        ]);
+
+        Livewire::test(TaxClosingWizard::class)
+            ->assertSet('currentStep', 4);
+    }
+
+    /** @test */
+    public function wizard_auto_starts_at_step_5_when_all_months_closed()
+    {
+        TaxCalculation::create([
+            'year' => (int) date('Y'),
+            'commercial_profit' => 100000000,
+            'fiscal_profit' => 100000000,
+            'taxable_income' => 100000000,
+            'tax_rate' => 22.00,
+            'tax_amount' => 22000000,
+            'status' => 'finalized',
+        ]);
+
+        $this->currentPeriod->update(['is_closed' => true, 'closed_at' => now()]);
+
+        Livewire::test(TaxClosingWizard::class)
+            ->assertSet('currentStep', 5);
+    }
+
+    /** @test */
+    public function wizard_auto_detects_step_on_year_change()
+    {
+        // Save tax calculation for 2025
+        TaxCalculation::create([
+            'year' => 2025,
+            'commercial_profit' => 100000000,
+            'fiscal_profit' => 100000000,
+            'taxable_income' => 100000000,
+            'tax_rate' => 22.00,
+            'tax_amount' => 22000000,
+            'status' => 'draft',
+        ]);
+
+        Period::create([
+            'code' => '202501',
+            'name' => 'Januari 2025',
+            'start_date' => '2025-01-01',
+            'end_date' => '2025-01-31',
+            'year' => 2025,
+            'month' => 1,
+            'is_active' => true,
+            'is_closed' => false,
+        ]);
+
+        // When switching to 2025 (has saved calculation), should jump to step 3
+        Livewire::test(TaxClosingWizard::class)
+            ->set('selectedYear', 2025)
+            ->assertSet('currentStep', 3);
+    }
 }

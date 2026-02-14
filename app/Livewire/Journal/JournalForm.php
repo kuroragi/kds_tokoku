@@ -86,14 +86,24 @@ class JournalForm extends Component
     public function findMatchingPeriod()
     {
         if (!$this->journal_date) return;
-        
-        $periods = $this->periods;
+
         $selectedDate = $this->journal_date;
-        
-        foreach ($periods as $period) {
+
+        // First, check all periods (including closed) for date match
+        $allPeriods = Period::orderBy('year', 'desc')->orderBy('month', 'desc')->get();
+
+        foreach ($allPeriods as $period) {
             if ($selectedDate >= $period->start_date && $selectedDate <= $period->end_date) {
+                if ($period->is_closed) {
+                    $this->id_period = null;
+                    $this->dispatch('showAlert', [
+                        'type' => 'warning',
+                        'message' => "Periode '{$period->period_name}' sudah ditutup. Tidak dapat membuat jurnal pada periode ini."
+                    ]);
+                    return;
+                }
+
                 $this->id_period = $period->id;
-                
                 $this->dispatch('showAlert', [
                     'type' => 'info',
                     'message' => "Periode '{$period->period_name}' otomatis dipilih berdasarkan tanggal."
@@ -101,7 +111,7 @@ class JournalForm extends Component
                 return;
             }
         }
-        
+
         // If no matching period found, clear selection and show warning
         $this->id_period = null;
         $this->dispatch('showAlert', [
@@ -189,6 +199,16 @@ class JournalForm extends Component
         
         // Add custom validation for balance
         $this->validate();
+
+        // Validate period is not closed
+        $period = Period::find($this->id_period);
+        if ($period && $period->is_closed) {
+            $this->dispatch('showAlert', [
+                'type' => 'error',
+                'message' => "Periode '{$period->period_name}' sudah ditutup. Tidak dapat membuat jurnal pada periode ini."
+            ]);
+            return;
+        }
         
         if ($this->totalDebit != $this->totalCredit) {
             $this->dispatch('showAlert', [
@@ -334,7 +354,8 @@ class JournalForm extends Component
     
     public function getPeriodsProperty()
     {
-        return Period::orderBy('year', 'desc')
+        return Period::where('is_closed', false)
+            ->orderBy('year', 'desc')
             ->orderBy('month', 'desc')
             ->get();
     }

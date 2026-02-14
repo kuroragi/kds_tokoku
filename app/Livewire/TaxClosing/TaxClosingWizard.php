@@ -70,11 +70,39 @@ class TaxClosingWizard extends Component
     public function mount()
     {
         $this->selectedYear = (int) date('Y');
+        $this->detectCurrentStep();
     }
 
     public function updatedSelectedYear()
     {
         $this->showTaxReport = false;
+        $this->detectCurrentStep();
+    }
+
+    /**
+     * Detect the first incomplete step and set as current step.
+     * If no progress beyond step 1, start at step 1.
+     */
+    private function detectCurrentStep()
+    {
+        $statuses = $this->stepStatuses;
+
+        // If no progress beyond step 1 (no tax calculation saved), start at step 1
+        if (!$statuses[2]) {
+            $this->currentStep = 1;
+            return;
+        }
+
+        // Find the first incomplete step from step 2 onward
+        for ($step = 2; $step <= $this->totalSteps; $step++) {
+            if (!$statuses[$step]) {
+                $this->currentStep = $step;
+                return;
+            }
+        }
+
+        // All steps complete — show the last step
+        $this->currentStep = $this->totalSteps;
     }
 
     // ======================================

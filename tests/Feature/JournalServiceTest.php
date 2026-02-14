@@ -470,4 +470,107 @@ class JournalServiceTest extends TestCase
         $this->assertTrue($result->relationLoaded('period'));
         $this->assertTrue($result->journals->first()->relationLoaded('coa'));
     }
+
+    // ==========================================
+    // Closed Period Enforcement Tests
+    // ==========================================
+
+    public function test_create_journal_fails_on_closed_period(): void
+    {
+        $this->period->update(['is_closed' => true, 'closed_at' => now()]);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('sudah ditutup');
+
+        $this->service->createJournalEntry([
+            'journal_date' => now()->format('Y-m-d'),
+            'id_period' => $this->period->id,
+            'entries' => [
+                ['coa_code' => '1101', 'debit' => 100000, 'credit' => 0],
+                ['coa_code' => '4101', 'debit' => 0, 'credit' => 100000],
+            ],
+        ]);
+    }
+
+    public function test_create_journal_fails_on_closed_period_no_data_saved(): void
+    {
+        $this->period->update(['is_closed' => true, 'closed_at' => now()]);
+
+        try {
+            $this->service->createJournalEntry([
+                'journal_date' => now()->format('Y-m-d'),
+                'id_period' => $this->period->id,
+                'entries' => [
+                    ['coa_code' => '1101', 'debit' => 100000, 'credit' => 0],
+                    ['coa_code' => '4101', 'debit' => 0, 'credit' => 100000],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            // Expected
+        }
+
+        $this->assertDatabaseCount('journal_masters', 0);
+        $this->assertDatabaseCount('journals', 0);
+    }
+
+    public function test_create_journal_succeeds_after_period_reopened(): void
+    {
+        // Close then reopen
+        $this->period->update(['is_closed' => true, 'closed_at' => now()]);
+        $this->period->update(['is_closed' => false, 'closed_at' => null]);
+
+        $result = $this->service->createJournalEntry([
+            'journal_date' => now()->format('Y-m-d'),
+            'id_period' => $this->period->id,
+            'entries' => [
+                ['coa_code' => '1101', 'debit' => 100000, 'credit' => 0],
+                ['coa_code' => '4101', 'debit' => 0, 'credit' => 100000],
+            ],
+        ]);
+
+        $this->assertInstanceOf(JournalMaster::class, $result);
+        $this->assertDatabaseCount('journal_masters', 1);
+    }
+
+    public function test_sales_journal_fails_on_closed_period(): void
+    {
+        $this->period->update(['is_closed' => true, 'closed_at' => now()]);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('sudah ditutup');
+
+        $this->service->createSalesJournal([
+            'date' => now()->format('Y-m-d'),
+            'id_period' => $this->period->id,
+            'amount' => 1000000,
+        ]);
+    }
+
+    public function test_purchase_journal_fails_on_closed_period(): void
+    {
+        $this->period->update(['is_closed' => true, 'closed_at' => now()]);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('sudah ditutup');
+
+        $this->service->createPurchaseJournal([
+            'date' => now()->format('Y-m-d'),
+            'id_period' => $this->period->id,
+            'amount' => 1000000,
+        ]);
+    }
+
+    public function test_payment_journal_fails_on_closed_period(): void
+    {
+        $this->period->update(['is_closed' => true, 'closed_at' => now()]);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('sudah ditutup');
+
+        $this->service->createPaymentJournal([
+            'date' => now()->format('Y-m-d'),
+            'id_period' => $this->period->id,
+            'amount' => 1000000,
+        ]);
+    }
 }

@@ -248,8 +248,15 @@ class JournalService
         }
         
         // Validate period exists
-        if (!Period::find($data['id_period'])) {
+        $period = Period::find($data['id_period']);
+        if (!$period) {
             throw new \Exception('Period not found.');
+        }
+
+        // Validate period is not closed (except for system-generated closing/tax journals)
+        $type = $data['type'] ?? 'general';
+        if ($period->is_closed && !in_array($type, ['closing', 'tax'])) {
+            throw new \Exception("Periode '{$period->period_name}' sudah ditutup. Tidak dapat membuat jurnal pada periode ini.");
         }
         
         // Validate each entry

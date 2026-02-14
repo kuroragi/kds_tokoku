@@ -604,11 +604,101 @@ class JournalFormTest extends TestCase
         $this->assertTrue($coas->every(fn ($coa) => $coa->is_active && $coa->is_leaf_account));
     }
 
-    public function test_periods_property_returns_all_periods(): void
+    public function test_periods_property_returns_only_open_periods(): void
     {
+        // Close the previous period
+        $this->prevPeriod->update(['is_closed' => true, 'closed_at' => now()]);
+
         $component = Livewire::test(JournalForm::class);
         $periods = $component->viewData('periods');
 
-        $this->assertCount(2, $periods);
+        // Only the current (open) period should be returned
+        $this->assertCount(1, $periods);
+        $this->assertEquals($this->currentPeriod->id, $periods->first()->id);
+    }
+
+    public function test_periods_property_excludes_closed_periods(): void
+    {
+        // Close both periods
+        $this->currentPeriod->update(['is_closed' => true, 'closed_at' => now()]);
+        $this->prevPeriod->update(['is_closed' => true, 'closed_at' => now()]);
+
+        $component = Livewire::test(JournalForm::class);
+        $periods = $component->viewData('periods');
+
+        $this->assertCount(0, $periods);
+    }
+
+    // ==========================================
+    // Closed Period Enforcement Tests
+    // ==========================================
+
+    public function test_auto_match_warns_when_period_closed(): void
+    {
+        $this->currentPeriod->update(['is_closed' => true, 'closed_at' => now()]);
+
+        Livewire::test(JournalForm::class)
+            ->call('openModal')
+            ->assertSet('id_period', null)
+            ->assertDispatched('showAlert', fn ($name, $params) => $params[0]['type'] === 'warning'
+                && str_contains($params[0]['message'], 'sudah ditutup'));
+    }
+
+    public function test_auto_match_skips_closed_period_selects_open_one(): void
+    {
+        // Close current month, prev month still open
+        $this->currentPeriod->update(['is_closed' => true, 'closed_at' => now()]);
+
+        $prevMonthDate = now()->subMonth()->format('Y-m-') . '15';
+
+        Livewire::test(JournalForm::class)
+            ->call('openModal')
+            // Auto-match for current date should warn (closed)
+            ->assertSet('id_period', null)
+            // Switch to prev month date — should auto-select the open prev period
+            ->set('journal_date', $prevMonthDate)
+            ->assertSet('id_period', $this->prevPeriod->id);
+    }
+
+    public function test_cannot_save_journal_to_closed_period(): void
+    {
+        $this->currentPeriod->update(['is_closed' => true, 'closed_at' => now()]);
+
+        // Use JournalService directly to verify enforcement at service level
+        $service = new \App\Services\JournalService();
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('sudah ditutup');
+
+        $service->createJournalEntry([
+            'journal_date' => now()->format('Y-m-d'),
+            'id_period' => $this->currentPeriod->id,
+            'entries' => [
+                ['coa_code' => $this->cashAccount->code, 'debit' => 100000, 'credit' => 0],
+                ['coa_code' => $this->revenueAccount->code, 'debit' => 0, 'credit' => 100000],
+            ],
+        ]);
+    }
+
+    public function test_save_blocks_closed_period_in_livewire(): void
+    {
+        $this->currentPeriod->update(['is_closed' => true, 'closed_at' => now()]);
+
+        $component = Livewire::test(JournalForm::class)
+            ->call('openModal')
+            ->set('id_period', $this->currentPeriod->id)
+            ->set('journal_date', now()->format('Y-m-d'))
+            ->set('journalDetails.0.id_coa', $this->cashAccount->id)
+            ->set('journalDetails.0.description', 'Cash')
+            ->set('journalDetails.0.debit', 100000)
+            ->set('journalDetails.0.credit', 0)
+            ->set('journalDetails.1.id_coa', $this->revenueAccount->id)
+            ->set('journalDetails.1.description', 'Revenue')
+            ->set('journalDetails.1.debit', 0)
+            ->set('journalDetails.1.credit', 100000)
+            ->call('save');
+
+        // Journal should NOT be saved
+        $this->assertDatabaseCount('journal_masters', 0);
     }
 }

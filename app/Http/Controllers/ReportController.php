@@ -314,4 +314,38 @@ class ReportController extends Controller
 
         return $pdf->download("buku-besar-{$coa->code}-" . now()->format('Ymd_His') . '.pdf');
     }
+
+    /**
+     * Download Final Balance Sheet PDF (Neraca Keuangan Final)
+     * Combines Balance Sheet + Income Statement into one comprehensive report
+     */
+    public function finalBalanceSheet(Request $request)
+    {
+        $request->validate([
+            'period_id' => 'nullable|exists:periods,id',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
+
+        $filters = $this->getFilters($request);
+
+        if (empty($filters)) {
+            return back()->with('error', 'Pilih periode atau range tanggal terlebih dahulu.');
+        }
+
+        $balanceSheet = $this->reportService->getBalanceSheet($filters);
+        $incomeStatement = $this->reportService->getIncomeStatement($filters);
+
+        $pdf = Pdf::loadView('pdf.final-balance-sheet', [
+            'balanceSheet' => $balanceSheet,
+            'incomeStatement' => $incomeStatement,
+            'filterDescription' => $this->getFilterDescription($request),
+            'title' => 'Neraca Keuangan Final',
+            'printDate' => now()->format('d/m/Y H:i'),
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download('neraca-keuangan-final-' . now()->format('Ymd_His') . '.pdf');
+    }
 }

@@ -41,4 +41,8 @@ class AccountingController extends Controller
     public function taxClosing(){
         return view('pages.accounting.tax-closing');
     }
+
+    public function finalBalanceSheet(){
+        return view('pages.accounting.final-balance-sheet');
+    }
 }

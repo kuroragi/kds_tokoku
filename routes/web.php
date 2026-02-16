@@ -31,6 +31,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('adjusted-trial-balance', [AccountingController::class, 'adjustedTrialBalance'])->name('adjusted-trial-balance');
     Route::get('tax-closing', [AccountingController::class, 'taxClosing'])->name('tax-closing');
 
+    // Report Pages
+    Route::get('report/final-balance-sheet', [AccountingController::class, 'finalBalanceSheet'])->name('report.final-balance-sheet');
+
     // PDF Report Downloads
     Route::prefix('report/pdf')->name('report.pdf.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
@@ -39,6 +42,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('adjusted-trial-balance', [ReportController::class, 'adjustedTrialBalance'])->name('adjusted-trial-balance');
         Route::get('general-ledger', [ReportController::class, 'generalLedger'])->name('general-ledger');
         Route::get('general-ledger/{coa}', [ReportController::class, 'generalLedgerDetail'])->name('general-ledger.detail');
+        Route::get('final-balance-sheet', [ReportController::class, 'finalBalanceSheet'])->name('final-balance-sheet');
     });
 
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');

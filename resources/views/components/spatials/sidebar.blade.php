@@ -431,24 +431,9 @@
                 </a>
                 <div class="collapse" id="sidebarPagesReports">
                     <ul class="side-nav-second-level">
-                        <li class="{{ request()->routeIs('general-ledger') ? 'active' : '' }}">
-                            <a href="{{ route('general-ledger') }}">
-                                <i class="ri-book-open-line me-1"></i> Buku Besar
-                            </a>
-                        </li>
-                        <li class="{{ request()->routeIs('trial-balance') ? 'active' : '' }}">
-                            <a href="{{ route('trial-balance') }}">
-                                <i class="ri-scales-3-line me-1"></i> Neraca & Neraca Saldo
-                            </a>
-                        </li>
-                        <li class="{{ request()->routeIs('income-statement') ? 'active' : '' }}">
-                            <a href="{{ route('income-statement') }}">
-                                <i class="ri-line-chart-line me-1"></i> Laba Rugi
-                            </a>
-                        </li>
-                        <li class="{{ request()->routeIs('adjusted-trial-balance') ? 'active' : '' }}">
-                            <a href="{{ route('adjusted-trial-balance') }}">
-                                <i class="ri-file-edit-line me-1"></i> Neraca Penyesuaian
+                        <li class="{{ request()->routeIs('report.final-balance-sheet') ? 'active' : '' }}">
+                            <a href="{{ route('report.final-balance-sheet') }}">
+                                <i class="ri-scales-3-line me-1"></i> Neraca Keuangan Final
                             </a>
                         </li>
                     </ul>

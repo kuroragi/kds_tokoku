@@ -11,8 +11,10 @@ use App\Models\Stock;
 use App\Models\StockCategory;
 use App\Models\UnitOfMeasure;
 use App\Models\User;
+use App\Services\BusinessUnitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class CategoryGroupTest extends TestCase
@@ -27,9 +29,12 @@ class CategoryGroupTest extends TestCase
     {
         parent::setUp();
 
+        Role::create(['name' => 'superadmin']);
+
         $this->user = User::withoutEvents(function () {
             return User::factory()->create();
         });
+        $this->user->assignRole('superadmin');
         $this->actingAs($this->user);
 
         $this->unit = BusinessUnit::withoutEvents(function () {
@@ -443,5 +448,60 @@ class CategoryGroupTest extends TestCase
         $this->createGroup(['code' => 'GRP-002', 'is_active' => false]);
 
         $this->assertEquals(1, CategoryGroup::active()->count());
+    }
+
+    // ==================== BUSINESS UNIT SCOPING TESTS ====================
+
+    /** @test */
+    public function non_superadmin_list_only_sees_own_unit_groups()
+    {
+        $unit2 = BusinessUnit::withoutEvents(fn() => BusinessUnit::create(['code' => 'UNT-002', 'name' => 'Unit 2', 'is_active' => true]));
+        $cat2 = StockCategory::withoutEvents(fn() => StockCategory::create([
+            'business_unit_id' => $unit2->id, 'code' => 'CAT-002', 'name' => 'Cat 2', 'type' => 'barang', 'is_active' => true,
+        ]));
+
+        $this->createGroup(['code' => 'GRP-001', 'name' => 'Grup Unit 1']);
+        CategoryGroup::withoutEvents(fn() => CategoryGroup::create([
+            'business_unit_id' => $unit2->id, 'stock_category_id' => $cat2->id,
+            'code' => 'GRP-002', 'name' => 'Grup Unit 2', 'is_active' => true,
+        ]));
+
+        $regularUser = User::withoutEvents(fn() => User::factory()->create(['business_unit_id' => $this->unit->id]));
+        $this->actingAs($regularUser);
+
+        Livewire::test(CategoryGroupList::class)
+            ->assertSee('Grup Unit 1')
+            ->assertDontSee('Grup Unit 2');
+    }
+
+    /** @test */
+    public function non_superadmin_form_auto_fills_business_unit_id()
+    {
+        $regularUser = User::withoutEvents(fn() => User::factory()->create(['business_unit_id' => $this->unit->id]));
+        $this->actingAs($regularUser);
+
+        Livewire::test(CategoryGroupForm::class)
+            ->call('openCategoryGroupModal')
+            ->assertSet('business_unit_id', $this->unit->id);
+    }
+
+    /** @test */
+    public function non_superadmin_save_uses_own_business_unit_id()
+    {
+        $regularUser = User::withoutEvents(fn() => User::factory()->create(['business_unit_id' => $this->unit->id]));
+        $this->actingAs($regularUser);
+
+        Livewire::test(CategoryGroupForm::class)
+            ->call('openCategoryGroupModal')
+            ->set('stock_category_id', $this->category->id)
+            ->set('code', 'GRP-AUTO')
+            ->set('name', 'Auto Unit Group')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('category_groups', [
+            'code' => 'GRP-AUTO',
+            'business_unit_id' => $this->unit->id,
+        ]);
     }
 }

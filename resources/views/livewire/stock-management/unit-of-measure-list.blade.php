@@ -11,6 +11,7 @@
                             placeholder="Kode, nama, simbol...">
                     </div>
                 </div>
+                @if($isSuperAdmin)
                 <div class="col-lg-2">
                     <label class="form-label small text-muted mb-1">Unit Usaha</label>
                     <select class="form-select form-select-sm" wire:model.live="filterUnit">
@@ -20,6 +21,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
                 <div class="col-lg-2">
                     <label class="form-label small text-muted mb-1">Status</label>
                     <select class="form-select form-select-sm" wire:model.live="filterStatus">
@@ -29,8 +31,14 @@
                     </select>
                 </div>
                 <div class="col-lg-5 text-end">
-                    @if($filterUnit)
+                    @if($isSuperAdmin && $filterUnit)
                     <button class="btn btn-outline-info btn-sm me-1" wire:click="duplicateDefaults({{ $filterUnit }})"
+                        wire:loading.attr="disabled">
+                        <span wire:loading.remove wire:target="duplicateDefaults"><i class="ri-file-copy-line"></i> Duplikat Satuan Default</span>
+                        <span wire:loading wire:target="duplicateDefaults"><i class="ri-loader-4-line"></i> Menduplikat...</span>
+                    </button>
+                    @elseif(!$isSuperAdmin && $units->first())
+                    <button class="btn btn-outline-info btn-sm me-1" wire:click="duplicateDefaults({{ $units->first()->id }})"
                         wire:loading.attr="disabled">
                         <span wire:loading.remove wire:target="duplicateDefaults"><i class="ri-file-copy-line"></i> Duplikat Satuan Default</span>
                         <span wire:loading wire:target="duplicateDefaults"><i class="ri-loader-4-line"></i> Menduplikat...</span>

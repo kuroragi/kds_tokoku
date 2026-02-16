@@ -2,9 +2,9 @@
 
 namespace App\Livewire\StockManagement;
 
-use App\Models\BusinessUnit;
 use App\Models\CategoryGroup;
 use App\Models\Stock;
+use App\Services\BusinessUnitService;
 use Livewire\Component;
 
 class StockList extends Component
@@ -63,11 +63,22 @@ class StockList extends Component
 
     public function getUnitsProperty()
     {
-        return BusinessUnit::active()->orderBy('name')->get();
+        return BusinessUnitService::getAvailableUnits();
     }
 
     public function getCategoryGroupsProperty()
     {
+        if (!BusinessUnitService::isSuperAdmin()) {
+            $unitId = BusinessUnitService::getUserBusinessUnitId();
+            if ($unitId) {
+                return CategoryGroup::active()
+                    ->where('business_unit_id', $unitId)
+                    ->orderBy('name')
+                    ->get();
+            }
+            return collect();
+        }
+
         if (!$this->filterUnit) {
             return CategoryGroup::active()->orderBy('name')->get();
         }
@@ -89,9 +100,7 @@ class StockList extends Component
             });
         }
 
-        if ($this->filterUnit) {
-            $query->where('business_unit_id', $this->filterUnit);
-        }
+        BusinessUnitService::applyBusinessUnitFilter($query, $this->filterUnit);
 
         if ($this->filterCategory) {
             $query->where('category_group_id', $this->filterCategory);
@@ -107,6 +116,7 @@ class StockList extends Component
             'stocks' => $query->get(),
             'units' => $this->units,
             'categoryGroups' => $this->categoryGroups,
+            'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),
         ]);
     }
 }

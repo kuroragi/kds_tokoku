@@ -10,8 +10,10 @@ use App\Models\Stock;
 use App\Models\StockCategory;
 use App\Models\UnitOfMeasure;
 use App\Models\User;
+use App\Services\BusinessUnitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class UnitOfMeasureTest extends TestCase
@@ -25,9 +27,12 @@ class UnitOfMeasureTest extends TestCase
     {
         parent::setUp();
 
+        Role::create(['name' => 'superadmin']);
+
         $this->user = User::withoutEvents(function () {
             return User::factory()->create();
         });
+        $this->user->assignRole('superadmin');
         $this->actingAs($this->user);
 
         $this->unit = BusinessUnit::withoutEvents(function () {
@@ -435,5 +440,55 @@ class UnitOfMeasureTest extends TestCase
         $this->createMeasure();
 
         $this->assertEquals(1, UnitOfMeasure::systemDefaults()->count());
+    }
+
+    // ==================== BUSINESS UNIT SCOPING TESTS ====================
+
+    /** @test */
+    public function non_superadmin_list_only_sees_own_unit_measures()
+    {
+        $unit2 = BusinessUnit::withoutEvents(fn() => BusinessUnit::create(['code' => 'UNT-002', 'name' => 'Unit 2', 'is_active' => true]));
+
+        $this->createMeasure(['code' => 'PCS', 'name' => 'Pieces Unit 1']);
+        UnitOfMeasure::withoutEvents(fn() => UnitOfMeasure::create([
+            'business_unit_id' => $unit2->id, 'code' => 'KG', 'name' => 'Kilogram Unit 2', 'is_active' => true,
+        ]));
+
+        $regularUser = User::withoutEvents(fn() => User::factory()->create(['business_unit_id' => $this->unit->id]));
+        $this->actingAs($regularUser);
+
+        Livewire::test(UnitOfMeasureList::class)
+            ->assertSee('Pieces Unit 1')
+            ->assertDontSee('Kilogram Unit 2');
+    }
+
+    /** @test */
+    public function non_superadmin_form_auto_fills_business_unit_id()
+    {
+        $regularUser = User::withoutEvents(fn() => User::factory()->create(['business_unit_id' => $this->unit->id]));
+        $this->actingAs($regularUser);
+
+        Livewire::test(UnitOfMeasureForm::class)
+            ->call('openUnitOfMeasureModal')
+            ->assertSet('business_unit_id', $this->unit->id);
+    }
+
+    /** @test */
+    public function non_superadmin_save_uses_own_business_unit_id()
+    {
+        $regularUser = User::withoutEvents(fn() => User::factory()->create(['business_unit_id' => $this->unit->id]));
+        $this->actingAs($regularUser);
+
+        Livewire::test(UnitOfMeasureForm::class)
+            ->call('openUnitOfMeasureModal')
+            ->set('code', 'UOM-AUTO')
+            ->set('name', 'Auto Measure')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('unit_of_measures', [
+            'code' => 'UOM-AUTO',
+            'business_unit_id' => $this->unit->id,
+        ]);
     }
 }

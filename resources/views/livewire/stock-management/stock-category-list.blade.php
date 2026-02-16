@@ -11,6 +11,7 @@
                             placeholder="Kode, nama...">
                     </div>
                 </div>
+                @if($isSuperAdmin)
                 <div class="col-lg-2">
                     <label class="form-label small text-muted mb-1">Unit Usaha</label>
                     <select class="form-select form-select-sm" wire:model.live="filterUnit">
@@ -20,6 +21,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
                 <div class="col-lg-2">
                     <label class="form-label small text-muted mb-1">Tipe</label>
                     <select class="form-select form-select-sm" wire:model.live="filterType">

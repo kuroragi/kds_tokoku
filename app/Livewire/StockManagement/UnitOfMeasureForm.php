@@ -2,8 +2,8 @@
 
 namespace App\Livewire\StockManagement;
 
-use App\Models\BusinessUnit;
 use App\Models\UnitOfMeasure;
+use App\Services\BusinessUnitService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -26,6 +26,7 @@ class UnitOfMeasureForm extends Component
     public function openUnitOfMeasureModal()
     {
         $this->resetForm();
+        $this->business_unit_id = BusinessUnitService::getDefaultBusinessUnitId();
         $this->showModal = true;
     }
 
@@ -89,6 +90,7 @@ class UnitOfMeasureForm extends Component
 
     public function save()
     {
+        $this->business_unit_id = BusinessUnitService::resolveBusinessUnitId($this->business_unit_id);
         $this->validate();
 
         $data = [
@@ -116,13 +118,14 @@ class UnitOfMeasureForm extends Component
 
     public function getUnitsProperty()
     {
-        return BusinessUnit::active()->orderBy('name')->get();
+        return BusinessUnitService::getAvailableUnits();
     }
 
     public function render()
     {
         return view('livewire.stock-management.unit-of-measure-form', [
             'units' => $this->units,
+            'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),
         ]);
     }
 }

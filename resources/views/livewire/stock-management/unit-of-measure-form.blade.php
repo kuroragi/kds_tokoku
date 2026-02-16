@@ -15,12 +15,16 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Unit Usaha <span class="text-danger">*</span></label>
+                                @if($isSuperAdmin)
                                 <select class="form-select @error('business_unit_id') is-invalid @enderror" wire:model.live="business_unit_id">
                                     <option value="">-- Pilih Unit Usaha --</option>
                                     @foreach($units as $unit)
                                     <option value="{{ $unit->id }}">{{ $unit->code }} — {{ $unit->name }}</option>
                                     @endforeach
                                 </select>
+                                @else
+                                <input type="text" class="form-control" value="{{ $units->first()?->code }} — {{ $units->first()?->name }}" readonly>
+                                @endif
                                 @error('business_unit_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                             <div class="col-md-6">

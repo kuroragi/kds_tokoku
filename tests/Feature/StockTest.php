@@ -10,8 +10,10 @@ use App\Models\Stock;
 use App\Models\StockCategory;
 use App\Models\UnitOfMeasure;
 use App\Models\User;
+use App\Services\BusinessUnitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class StockTest extends TestCase
@@ -28,9 +30,12 @@ class StockTest extends TestCase
     {
         parent::setUp();
 
+        Role::create(['name' => 'superadmin']);
+
         $this->user = User::withoutEvents(function () {
             return User::factory()->create();
         });
+        $this->user->assignRole('superadmin');
         $this->actingAs($this->user);
 
         $this->unit = BusinessUnit::withoutEvents(function () {
@@ -604,5 +609,64 @@ class StockTest extends TestCase
     public function business_unit_has_many_unit_of_measures()
     {
         $this->assertCount(1, $this->unit->unitOfMeasures);
+    }
+
+    // ==================== BUSINESS UNIT SCOPING TESTS ====================
+
+    /** @test */
+    public function non_superadmin_list_only_sees_own_unit_stocks()
+    {
+        $unit2 = BusinessUnit::withoutEvents(fn() => BusinessUnit::create(['code' => 'UNT-002', 'name' => 'Unit 2', 'is_active' => true]));
+        $cat2 = StockCategory::withoutEvents(fn() => StockCategory::create(['business_unit_id' => $unit2->id, 'code' => 'CAT-002', 'name' => 'Cat 2', 'type' => 'barang', 'is_active' => true]));
+        $grp2 = CategoryGroup::withoutEvents(fn() => CategoryGroup::create(['business_unit_id' => $unit2->id, 'stock_category_id' => $cat2->id, 'code' => 'GRP-002', 'name' => 'Grp 2', 'is_active' => true]));
+        $msr2 = UnitOfMeasure::withoutEvents(fn() => UnitOfMeasure::create(['business_unit_id' => $unit2->id, 'code' => 'KG', 'name' => 'Kilogram', 'is_active' => true]));
+
+        $this->createStock(['code' => 'STK-001', 'name' => 'Stok Unit 1']);
+        Stock::withoutEvents(fn() => Stock::create([
+            'business_unit_id' => $unit2->id, 'category_group_id' => $grp2->id, 'unit_of_measure_id' => $msr2->id,
+            'code' => 'STK-002', 'name' => 'Stok Unit 2', 'buy_price' => 100, 'sell_price' => 200, 'min_stock' => 0, 'current_stock' => 0, 'is_active' => true,
+        ]));
+
+        $regularUser = User::withoutEvents(fn() => User::factory()->create(['business_unit_id' => $this->unit->id]));
+        $this->actingAs($regularUser);
+
+        Livewire::test(StockList::class)
+            ->assertSee('Stok Unit 1')
+            ->assertDontSee('Stok Unit 2');
+    }
+
+    /** @test */
+    public function non_superadmin_form_auto_fills_business_unit_id()
+    {
+        $regularUser = User::withoutEvents(fn() => User::factory()->create(['business_unit_id' => $this->unit->id]));
+        $this->actingAs($regularUser);
+
+        Livewire::test(StockForm::class)
+            ->call('openStockModal')
+            ->assertSet('business_unit_id', $this->unit->id);
+    }
+
+    /** @test */
+    public function non_superadmin_save_uses_own_business_unit_id()
+    {
+        $regularUser = User::withoutEvents(fn() => User::factory()->create(['business_unit_id' => $this->unit->id]));
+        $this->actingAs($regularUser);
+
+        Livewire::test(StockForm::class)
+            ->call('openStockModal')
+            ->set('category_group_id', $this->group->id)
+            ->set('unit_of_measure_id', $this->measure->id)
+            ->set('code', 'STK-AUTO')
+            ->set('name', 'Auto Unit Stock')
+            ->set('buy_price', 1000)
+            ->set('sell_price', 2000)
+            ->set('min_stock', 5)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('stocks', [
+            'code' => 'STK-AUTO',
+            'business_unit_id' => $this->unit->id,
+        ]);
     }
 }

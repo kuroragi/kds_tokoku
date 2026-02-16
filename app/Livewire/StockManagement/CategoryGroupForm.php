@@ -2,10 +2,10 @@
 
 namespace App\Livewire\StockManagement;
 
-use App\Models\BusinessUnit;
 use App\Models\CategoryGroup;
 use App\Models\COA;
 use App\Models\StockCategory;
+use App\Services\BusinessUnitService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -31,6 +31,7 @@ class CategoryGroupForm extends Component
     public function openCategoryGroupModal()
     {
         $this->resetForm();
+        $this->business_unit_id = BusinessUnitService::getDefaultBusinessUnitId();
         $this->showModal = true;
     }
 
@@ -104,6 +105,7 @@ class CategoryGroupForm extends Component
 
     public function save()
     {
+        $this->business_unit_id = BusinessUnitService::resolveBusinessUnitId($this->business_unit_id);
         $this->validate();
 
         $data = [
@@ -133,7 +135,7 @@ class CategoryGroupForm extends Component
 
     public function getUnitsProperty()
     {
-        return BusinessUnit::active()->orderBy('name')->get();
+        return BusinessUnitService::getAvailableUnits();
     }
 
     public function getCategoriesProperty()
@@ -187,6 +189,7 @@ class CategoryGroupForm extends Component
             'inventoryCoas' => $this->inventoryCoas,
             'revenueCoas' => $this->revenueCoas,
             'expenseCoas' => $this->expenseCoas,
+            'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),
         ]);
     }
 }

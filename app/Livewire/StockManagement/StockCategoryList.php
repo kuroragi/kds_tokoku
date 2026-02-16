@@ -2,8 +2,8 @@
 
 namespace App\Livewire\StockManagement;
 
-use App\Models\BusinessUnit;
 use App\Models\StockCategory;
+use App\Services\BusinessUnitService;
 use Livewire\Component;
 
 class StockCategoryList extends Component
@@ -39,9 +39,7 @@ class StockCategoryList extends Component
             });
         }
 
-        if ($this->filterUnit) {
-            $query->where('business_unit_id', $this->filterUnit);
-        }
+        BusinessUnitService::applyBusinessUnitFilter($query, $this->filterUnit);
 
         if ($this->filterType) {
             $query->where('type', $this->filterType);
@@ -56,7 +54,7 @@ class StockCategoryList extends Component
 
     public function getUnitsProperty()
     {
-        return BusinessUnit::active()->orderBy('name')->get();
+        return BusinessUnitService::getAvailableUnits();
     }
 
     public function deleteCategory($id)
@@ -90,6 +88,7 @@ class StockCategoryList extends Component
             'categories' => $this->categories,
             'units' => $this->units,
             'types' => StockCategory::getTypes(),
+            'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),
         ]);
     }
 }

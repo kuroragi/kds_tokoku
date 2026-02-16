@@ -2,8 +2,8 @@
 
 namespace App\Livewire\StockManagement;
 
-use App\Models\BusinessUnit;
 use App\Models\UnitOfMeasure;
+use App\Services\BusinessUnitService;
 use Livewire\Component;
 
 class UnitOfMeasureList extends Component
@@ -40,9 +40,7 @@ class UnitOfMeasureList extends Component
             });
         }
 
-        if ($this->filterUnit) {
-            $query->where('business_unit_id', $this->filterUnit);
-        }
+        BusinessUnitService::applyBusinessUnitFilter($query, $this->filterUnit);
 
         if ($this->filterStatus !== '') {
             $query->where('is_active', $this->filterStatus);
@@ -53,7 +51,7 @@ class UnitOfMeasureList extends Component
 
     public function getUnitsProperty()
     {
-        return BusinessUnit::active()->orderBy('name')->get();
+        return BusinessUnitService::getAvailableUnits();
     }
 
     /**
@@ -100,6 +98,7 @@ class UnitOfMeasureList extends Component
         return view('livewire.stock-management.unit-of-measure-list', [
             'measures' => $this->measures,
             'units' => $this->units,
+            'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),
         ]);
     }
 }

@@ -2,10 +2,10 @@
 
 namespace App\Livewire\StockManagement;
 
-use App\Models\BusinessUnit;
 use App\Models\CategoryGroup;
 use App\Models\COA;
 use App\Models\StockCategory;
+use App\Services\BusinessUnitService;
 use Livewire\Component;
 
 class CategoryGroupList extends Component
@@ -41,9 +41,7 @@ class CategoryGroupList extends Component
             });
         }
 
-        if ($this->filterUnit) {
-            $query->where('business_unit_id', $this->filterUnit);
-        }
+        BusinessUnitService::applyBusinessUnitFilter($query, $this->filterUnit);
 
         if ($this->filterCategory) {
             $query->where('stock_category_id', $this->filterCategory);
@@ -58,13 +56,18 @@ class CategoryGroupList extends Component
 
     public function getUnitsProperty()
     {
-        return BusinessUnit::active()->orderBy('name')->get();
+        return BusinessUnitService::getAvailableUnits();
     }
 
     public function getCategoriesProperty()
     {
         $query = StockCategory::active();
-        if ($this->filterUnit) {
+        if (!BusinessUnitService::isSuperAdmin()) {
+            $unitId = BusinessUnitService::getUserBusinessUnitId();
+            if ($unitId) {
+                $query->where('business_unit_id', $unitId);
+            }
+        } elseif ($this->filterUnit) {
             $query->where('business_unit_id', $this->filterUnit);
         }
         return $query->orderBy('name')->get();
@@ -101,6 +104,7 @@ class CategoryGroupList extends Component
             'groups' => $this->groups,
             'units' => $this->units,
             'categories' => $this->categories,
+            'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),
         ]);
     }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Livewire\StockManagement;
 
-use App\Models\BusinessUnit;
 use App\Models\StockCategory;
+use App\Services\BusinessUnitService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -26,6 +26,7 @@ class StockCategoryForm extends Component
     public function openStockCategoryModal()
     {
         $this->resetForm();
+        $this->business_unit_id = BusinessUnitService::getDefaultBusinessUnitId();
         $this->showModal = true;
     }
 
@@ -90,6 +91,7 @@ class StockCategoryForm extends Component
 
     public function save()
     {
+        $this->business_unit_id = BusinessUnitService::resolveBusinessUnitId($this->business_unit_id);
         $this->validate();
 
         $data = [
@@ -116,7 +118,7 @@ class StockCategoryForm extends Component
 
     public function getUnitsProperty()
     {
-        return BusinessUnit::active()->orderBy('name')->get();
+        return BusinessUnitService::getAvailableUnits();
     }
 
     public function render()
@@ -124,6 +126,7 @@ class StockCategoryForm extends Component
         return view('livewire.stock-management.stock-category-form', [
             'units' => $this->units,
             'types' => StockCategory::getTypes(),
+            'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),
         ]);
     }
 }

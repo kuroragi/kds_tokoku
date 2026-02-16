@@ -30,6 +30,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             COASeeder::class,
             PeriodSeeder::class,
+            RolePermissionSeeder::class,
+            BusinessUnitSeeder::class,
         ]);
     } 
 }

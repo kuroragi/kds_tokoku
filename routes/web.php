@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MasterController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ReportController;
 use App\Livewire\Coa\CoaList;
@@ -46,6 +47,23 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+
+    // Master Data
+    Route::prefix('master')->group(function () {
+        // Business Unit
+        Route::get('business-unit', [MasterController::class, 'businessUnitIndex'])->name('business-unit.index');
+        Route::get('business-unit/create', [MasterController::class, 'businessUnitCreate'])->name('business-unit.create');
+        Route::get('business-unit/{unit}/edit', [MasterController::class, 'businessUnitEdit'])->name('business-unit.edit');
+
+        // User Management
+        Route::get('user', [MasterController::class, 'userIndex'])->name('user.index');
+
+        // Role Management
+        Route::get('role', [MasterController::class, 'roleIndex'])->name('role.index');
+
+        // Permission Management
+        Route::get('permission', [MasterController::class, 'permissionIndex'])->name('permission.index');
+    });
 });
 
 

@@ -48,45 +48,25 @@
                 </a>
                 <div class="collapse" id="sidebarPages">
                     <ul class="side-nav-second-level">
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('company.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('company.index') }}"> --}}
-                                    <i class="ri-building-line me-1"></i> Perusahaan
-                                </a>
+                        <li class="{{ request()->routeIs('business-unit.*') ? 'active' : '' }}">
+                            <a href="{{ route('business-unit.index') }}">
+                                <i class="ri-store-2-line me-1"></i> Unit Usaha
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('coa.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('coa.index') }}"> --}}
-                                    <i class="ri-file-list-line me-1"></i> Chart of Accounts
-                                </a>
+                        <li class="{{ request()->routeIs('user.*') ? 'active' : '' }}">
+                            <a href="{{ route('user.index') }}">
+                                <i class="ri-user-line me-1"></i> User
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('permission.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('permission.index') }}"> --}}
-                                    <i class="ri-key-2-line me-1"></i> Permission
-                                </a>
+                        <li class="{{ request()->routeIs('role.*') ? 'active' : '' }}">
+                            <a href="{{ route('role.index') }}">
+                                <i class="ri-shield-user-line me-1"></i> Role
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('role.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('role.index') }}"> --}}
-                                    <i class="ri-shield-user-line me-1"></i> Role
-                                </a>
-                        </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('user.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('user.index') }}"> --}}
-                                    <i class="ri-user-line me-1"></i> User
-                                </a>
+                        <li class="{{ request()->routeIs('permission.*') ? 'active' : '' }}">
+                            <a href="{{ route('permission.index') }}">
+                                <i class="ri-key-2-line me-1"></i> Permission
+                            </a>
                         </li>
                     </ul>
                 </div>

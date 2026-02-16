@@ -43,6 +43,26 @@ class BusinessUnit extends Model
         return $this->hasMany(BusinessUnitCoaMapping::class);
     }
 
+    public function stockCategories()
+    {
+        return $this->hasMany(StockCategory::class);
+    }
+
+    public function categoryGroups()
+    {
+        return $this->hasMany(CategoryGroup::class);
+    }
+
+    public function unitOfMeasures()
+    {
+        return $this->hasMany(UnitOfMeasure::class);
+    }
+
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class);
+    }
+
     // Helpers
     public function getCoaByKey(string $accountKey): ?COA
     {

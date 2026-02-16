@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             PeriodSeeder::class,
             RolePermissionSeeder::class,
             BusinessUnitSeeder::class,
+            UnitOfMeasureSeeder::class,
         ]);
     } 
 }

@@ -63,6 +63,18 @@ Route::middleware(['auth'])->group(function () {
 
         // Permission Management
         Route::get('permission', [MasterController::class, 'permissionIndex'])->name('permission.index');
+
+        // Stock Management
+        Route::get('stock-category', [MasterController::class, 'stockCategoryIndex'])->name('stock-category.index');
+        Route::get('category-group', [MasterController::class, 'categoryGroupIndex'])->name('category-group.index');
+        Route::get('unit-of-measure', [MasterController::class, 'unitOfMeasureIndex'])->name('unit-of-measure.index');
+        Route::get('stock', [MasterController::class, 'stockIndex'])->name('stock.index');
+
+        // Stock Management
+        Route::get('stock-category', [MasterController::class, 'stockCategoryIndex'])->name('stock-category.index');
+        Route::get('category-group', [MasterController::class, 'categoryGroupIndex'])->name('category-group.index');
+        Route::get('unit-of-measure', [MasterController::class, 'unitOfMeasureIndex'])->name('unit-of-measure.index');
+        Route::get('stock', [MasterController::class, 'stockIndex'])->name('stock.index');
     });
 });
 

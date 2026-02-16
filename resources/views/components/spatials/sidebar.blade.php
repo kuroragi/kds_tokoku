@@ -102,42 +102,30 @@
                 <a data-bs-toggle="collapse" href="#sidebarPagesProducts" aria-expanded="false"
                     aria-controls="sidebarPagesProducts" class="side-nav-link">
                     <i class="bi bi-boxes"></i>
-                    <span> Product </span>
+                    <span> Stok </span>
                     <span class="menu-arrow"></span>
                 </a>
                 <div class="collapse" id="sidebarPagesProducts">
                     <ul class="side-nav-second-level">
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('product-category.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('product-category.index') }}"> --}}
-                                    <i class="ri-box-1-line me-1"></i> Kategori Produk
-                                </a>
+                        <li class="{{ request()->routeIs('stock-category.index') ? 'active' : '' }}">
+                            <a href="{{ route('stock-category.index') }}">
+                                <i class="ri-archive-line me-1"></i> Kategori Stok
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('product-group.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('product-group.index') }}"> --}}
-                                    <i class="ri-box-2-line me-1"></i> Kelompok Produk
-                                </a>
+                        <li class="{{ request()->routeIs('category-group.index') ? 'active' : '' }}">
+                            <a href="{{ route('category-group.index') }}">
+                                <i class="ri-folder-line me-1"></i> Grup Kategori
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('satuan.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('satuan.index') }}"> --}}
-                                    <i class="ri-box-3-line me-1"></i> Satuan
-                                </a>
+                        <li class="{{ request()->routeIs('unit-of-measure.index') ? 'active' : '' }}">
+                            <a href="{{ route('unit-of-measure.index') }}">
+                                <i class="ri-ruler-line me-1"></i> Satuan
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('product.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('product.index') }}"> --}}
-                                    <i class="bi bi-box-seam me-1"></i> Produk
-                                </a>
+                        <li class="{{ request()->routeIs('stock.index') ? 'active' : '' }}">
+                            <a href="{{ route('stock.index') }}">
+                                <i class="ri-shopping-bag-line me-1"></i> Stok
+                            </a>
                         </li>
                     </ul>
                 </div>

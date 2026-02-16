@@ -40,4 +40,28 @@ class MasterController extends Controller
     {
         return view('pages.master.permission');
     }
+
+    // Stock Category
+    public function stockCategoryIndex()
+    {
+        return view('pages.master.stock-category');
+    }
+
+    // Category Group
+    public function categoryGroupIndex()
+    {
+        return view('pages.master.category-group');
+    }
+
+    // Unit of Measure
+    public function unitOfMeasureIndex()
+    {
+        return view('pages.master.unit-of-measure');
+    }
+
+    // Stock
+    public function stockIndex()
+    {
+        return view('pages.master.stock');
+    }
 }

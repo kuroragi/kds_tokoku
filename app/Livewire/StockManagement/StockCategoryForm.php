@@ -1,0 +1,129 @@
+<?php
+
+namespace App\Livewire\StockManagement;
+
+use App\Models\BusinessUnit;
+use App\Models\StockCategory;
+use Illuminate\Validation\Rule;
+use Livewire\Component;
+
+class StockCategoryForm extends Component
+{
+    public bool $showModal = false;
+    public ?int $categoryId = null;
+    public bool $isEditing = false;
+
+    // Fields
+    public $business_unit_id = '';
+    public $code = '';
+    public $name = '';
+    public $type = 'barang';
+    public $description = '';
+    public $is_active = true;
+
+    protected $listeners = ['openStockCategoryModal', 'editStockCategory'];
+
+    public function openStockCategoryModal()
+    {
+        $this->resetForm();
+        $this->showModal = true;
+    }
+
+    public function editStockCategory($id)
+    {
+        $category = StockCategory::findOrFail($id);
+
+        $this->categoryId = $category->id;
+        $this->isEditing = true;
+        $this->business_unit_id = $category->business_unit_id;
+        $this->code = $category->code;
+        $this->name = $category->name;
+        $this->type = $category->type;
+        $this->description = $category->description ?? '';
+        $this->is_active = $category->is_active;
+        $this->showModal = true;
+    }
+
+    public function closeModal()
+    {
+        $this->showModal = false;
+        $this->resetForm();
+    }
+
+    private function resetForm()
+    {
+        $this->categoryId = null;
+        $this->isEditing = false;
+        $this->business_unit_id = '';
+        $this->code = '';
+        $this->name = '';
+        $this->type = 'barang';
+        $this->description = '';
+        $this->is_active = true;
+        $this->resetValidation();
+    }
+
+    protected function rules(): array
+    {
+        return [
+            'business_unit_id' => 'required|exists:business_units,id',
+            'code' => [
+                'required', 'string', 'max:20',
+                Rule::unique('stock_categories', 'code')
+                    ->where('business_unit_id', $this->business_unit_id)
+                    ->ignore($this->categoryId),
+            ],
+            'name' => 'required|string|max:255',
+            'type' => 'required|in:barang,jasa,saldo',
+            'description' => 'nullable|string|max:1000',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    protected $messages = [
+        'business_unit_id.required' => 'Unit usaha wajib dipilih.',
+        'code.required' => 'Kode kategori wajib diisi.',
+        'code.unique' => 'Kode kategori sudah digunakan pada unit usaha ini.',
+        'name.required' => 'Nama kategori wajib diisi.',
+        'type.required' => 'Tipe kategori wajib dipilih.',
+    ];
+
+    public function save()
+    {
+        $this->validate();
+
+        $data = [
+            'business_unit_id' => $this->business_unit_id,
+            'code' => $this->code,
+            'name' => $this->name,
+            'type' => $this->type,
+            'description' => $this->description ?: null,
+            'is_active' => $this->is_active,
+        ];
+
+        if ($this->isEditing) {
+            $category = StockCategory::findOrFail($this->categoryId);
+            $category->update($data);
+        } else {
+            StockCategory::create($data);
+        }
+
+        $action = $this->isEditing ? 'diperbarui' : 'dibuat';
+        $this->dispatch('alert', type: 'success', message: "Kategori stok '{$this->name}' berhasil {$action}.");
+        $this->dispatch('refreshStockCategoryList');
+        $this->closeModal();
+    }
+
+    public function getUnitsProperty()
+    {
+        return BusinessUnit::active()->orderBy('name')->get();
+    }
+
+    public function render()
+    {
+        return view('livewire.stock-management.stock-category-form', [
+            'units' => $this->units,
+            'types' => StockCategory::getTypes(),
+        ]);
+    }
+}

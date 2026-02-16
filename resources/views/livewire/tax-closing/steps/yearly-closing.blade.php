@@ -76,7 +76,7 @@
                 </div>
                 <div class="text-end">
                     <button type="button" class="btn btn-danger"
-                        onclick="Swal.fire({title:'Tutup Buku Tahunan '+{{ $selectedYear }}+'?',text:'Jurnal penutup akan dibuat otomatis. Pastikan semua transaksi dan pajak sudah dicatat.',icon:'warning',showCancelButton:true,confirmButtonColor:'#d33',confirmButtonText:'Ya, Tutup Buku!',cancelButtonText:'Batal'}).then(r=>{if(r.isConfirmed)$wire.closeYear()})">
+                        wire:click="confirmCloseYear">
                         <i class="ri-book-line me-1"></i> Tutup Buku Tahunan {{ $selectedYear }}
                     </button>
                 </div>

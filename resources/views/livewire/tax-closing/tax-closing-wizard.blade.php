@@ -79,4 +79,67 @@
             Selanjutnya <i class="ri-arrow-right-line ms-1"></i>
         </button>
     </div>
+
+    {{-- Confirmation Modal --}}
+    @if($showConfirmModal)
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" wire:click.self="dismissConfirmModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body text-center p-4">
+                    @if($confirmAction === 'closeMonth')
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="ri-lock-line text-danger" style="font-size: 2.5rem;"></i>
+                            </div>
+                        </div>
+                        <h5 class="fw-bold mb-2">Tutup Periode?</h5>
+                        <p class="text-muted mb-1">Anda akan menutup periode:</p>
+                        <p class="fw-semibold text-dark mb-3">{{ $confirmPeriodName }}</p>
+                        <p class="text-muted small mb-0">Setelah ditutup, jurnal tidak dapat ditambahkan ke periode ini. Anda masih bisa membuka kembali periode nanti jika diperlukan.</p>
+                    @elseif($confirmAction === 'reopenMonth')
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="ri-lock-unlock-line text-success" style="font-size: 2.5rem;"></i>
+                            </div>
+                        </div>
+                        <h5 class="fw-bold mb-2">Buka Kembali Periode?</h5>
+                        <p class="text-muted mb-1">Anda akan membuka kembali periode:</p>
+                        <p class="fw-semibold text-dark mb-3">{{ $confirmPeriodName }}</p>
+                        <p class="text-muted small mb-0">Jurnal baru bisa kembali diinput ke periode ini setelah dibuka.</p>
+                    @elseif($confirmAction === 'closeYear')
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="ri-book-line text-danger" style="font-size: 2.5rem;"></i>
+                            </div>
+                        </div>
+                        <h5 class="fw-bold mb-2">Tutup Buku Tahunan {{ $selectedYear }}?</h5>
+                        <p class="text-muted mb-3">Jurnal penutup akan dibuat otomatis oleh sistem. Semua akun Pendapatan dan Beban akan ditutup ke akun Ikhtisar Laba Rugi, lalu saldo dipindahkan ke Laba Ditahan.</p>
+                        <div class="alert alert-warning py-2 small text-start mb-0">
+                            <i class="ri-error-warning-line me-1"></i>
+                            Pastikan semua transaksi dan pajak untuk tahun {{ $selectedYear }} sudah dicatat dengan benar sebelum melanjutkan.
+                        </div>
+                    @endif
+                </div>
+                <div class="modal-footer justify-content-center border-top-0 pt-0 pb-4">
+                    <button type="button" class="btn btn-light px-4" wire:click="dismissConfirmModal">
+                        <i class="ri-close-line me-1"></i> Batal
+                    </button>
+                    @if($confirmAction === 'closeMonth')
+                        <button type="button" class="btn btn-danger px-4" wire:click="executeConfirmedAction">
+                            <i class="ri-lock-line me-1"></i> Ya, Tutup Periode
+                        </button>
+                    @elseif($confirmAction === 'reopenMonth')
+                        <button type="button" class="btn btn-success px-4" wire:click="executeConfirmedAction">
+                            <i class="ri-lock-unlock-line me-1"></i> Ya, Buka Kembali
+                        </button>
+                    @elseif($confirmAction === 'closeYear')
+                        <button type="button" class="btn btn-danger px-4" wire:click="executeConfirmedAction">
+                            <i class="ri-book-line me-1"></i> Ya, Tutup Buku
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>

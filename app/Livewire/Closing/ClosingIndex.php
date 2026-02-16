@@ -15,12 +15,13 @@ class ClosingIndex extends Component
     public $summaryCoaId = '';
     public $retainedEarningsCoaId = '';
 
-    protected ClosingService $closingService;
+    // Confirmation modals
+    public $showConfirmModal = false;
+    public $confirmAction = '';
+    public $confirmPeriodId = null;
+    public $confirmPeriodName = '';
 
-    protected $listeners = [
-        'closeMonthConfirmed' => 'closeMonth',
-        'reopenMonthConfirmed' => 'reopenMonth',
-    ];
+    protected ClosingService $closingService;
 
     public function boot(ClosingService $closingService)
     {
@@ -52,6 +53,57 @@ class ClosingIndex extends Component
             ->where('is_leaf_account', true)
             ->orderBy('code')
             ->get();
+    }
+
+    // Confirmation modal helpers
+    public function confirmCloseMonth($periodId)
+    {
+        $period = Period::find($periodId);
+        $this->confirmAction = 'closeMonth';
+        $this->confirmPeriodId = $periodId;
+        $this->confirmPeriodName = $period ? $period->name : '';
+        $this->showConfirmModal = true;
+    }
+
+    public function confirmReopenMonth($periodId)
+    {
+        $period = Period::find($periodId);
+        $this->confirmAction = 'reopenMonth';
+        $this->confirmPeriodId = $periodId;
+        $this->confirmPeriodName = $period ? $period->name : '';
+        $this->showConfirmModal = true;
+    }
+
+    public function confirmCloseYear()
+    {
+        $this->confirmAction = 'closeYear';
+        $this->confirmPeriodId = null;
+        $this->confirmPeriodName = '';
+        $this->showConfirmModal = true;
+    }
+
+    public function dismissConfirmModal()
+    {
+        $this->showConfirmModal = false;
+        $this->confirmAction = '';
+        $this->confirmPeriodId = null;
+        $this->confirmPeriodName = '';
+    }
+
+    public function executeConfirmedAction()
+    {
+        $this->showConfirmModal = false;
+
+        match ($this->confirmAction) {
+            'closeMonth' => $this->closeMonth($this->confirmPeriodId),
+            'reopenMonth' => $this->reopenMonth($this->confirmPeriodId),
+            'closeYear' => $this->closeYear(),
+            default => null,
+        };
+
+        $this->confirmAction = '';
+        $this->confirmPeriodId = null;
+        $this->confirmPeriodName = '';
     }
 
     // Monthly closing

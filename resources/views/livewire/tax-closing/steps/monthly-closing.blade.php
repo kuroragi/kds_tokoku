@@ -42,13 +42,13 @@
                     <td class="text-center">
                         @if($period->is_closed)
                             <button class="btn btn-sm btn-outline-success"
-                                onclick="Swal.fire({title:'Buka Kembali Periode?',text:'Jurnal bisa kembali diinput ke periode ini.',icon:'question',showCancelButton:true,confirmButtonText:'Ya, Buka!',cancelButtonText:'Batal'}).then(r=>{if(r.isConfirmed)$wire.dispatch('reopenMonthConfirmed',[{{ $period->id }}])})"
+                                wire:click="confirmReopenMonth({{ $period->id }})"
                                 title="Buka Kembali">
                                 <i class="ri-lock-unlock-line"></i>
                             </button>
                         @else
                             <button class="btn btn-sm btn-outline-danger"
-                                onclick="Swal.fire({title:'Tutup Periode?',text:'Setelah ditutup, jurnal tidak dapat ditambahkan ke periode ini.',icon:'warning',showCancelButton:true,confirmButtonText:'Ya, Tutup!',cancelButtonText:'Batal'}).then(r=>{if(r.isConfirmed)$wire.dispatch('closeMonthConfirmed',[{{ $period->id }}])})"
+                                wire:click="confirmCloseMonth({{ $period->id }})"
                                 title="Tutup Periode">
                                 <i class="ri-lock-line"></i>
                             </button>

@@ -587,4 +587,79 @@ class ClosingTest extends TestCase
         // Journal must be balanced
         $this->assertEquals($journal->journals->sum('debit'), $journal->journals->sum('credit'));
     }
+
+    // ======================================
+    // Confirmation Modal Flow
+    // ======================================
+
+    /** @test */
+    public function confirm_close_month_shows_modal()
+    {
+        Livewire::test(ClosingIndex::class)
+            ->assertSet('showConfirmModal', false)
+            ->call('confirmCloseMonth', $this->periods[1]->id)
+            ->assertSet('showConfirmModal', true)
+            ->assertSet('confirmAction', 'closeMonth')
+            ->assertSet('confirmPeriodId', $this->periods[1]->id)
+            ->assertSet('confirmPeriodName', $this->periods[1]->name);
+    }
+
+    /** @test */
+    public function confirm_reopen_month_shows_modal()
+    {
+        $this->periods[1]->update(['is_closed' => true, 'closed_at' => now()]);
+
+        Livewire::test(ClosingIndex::class)
+            ->call('confirmReopenMonth', $this->periods[1]->id)
+            ->assertSet('showConfirmModal', true)
+            ->assertSet('confirmAction', 'reopenMonth')
+            ->assertSet('confirmPeriodName', $this->periods[1]->name);
+    }
+
+    /** @test */
+    public function confirm_close_year_shows_modal()
+    {
+        Livewire::test(ClosingIndex::class)
+            ->call('confirmCloseYear')
+            ->assertSet('showConfirmModal', true)
+            ->assertSet('confirmAction', 'closeYear');
+    }
+
+    /** @test */
+    public function dismiss_modal_resets_state()
+    {
+        Livewire::test(ClosingIndex::class)
+            ->call('confirmCloseMonth', $this->periods[1]->id)
+            ->assertSet('showConfirmModal', true)
+            ->call('dismissConfirmModal')
+            ->assertSet('showConfirmModal', false)
+            ->assertSet('confirmAction', '')
+            ->assertSet('confirmPeriodId', null);
+    }
+
+    /** @test */
+    public function execute_confirmed_close_month()
+    {
+        Livewire::test(ClosingIndex::class)
+            ->call('confirmCloseMonth', $this->periods[1]->id)
+            ->call('executeConfirmedAction')
+            ->assertSet('showConfirmModal', false)
+            ->assertDispatched('showAlert');
+
+        $this->assertTrue($this->periods[1]->fresh()->is_closed);
+    }
+
+    /** @test */
+    public function execute_confirmed_reopen_month()
+    {
+        $this->periods[1]->update(['is_closed' => true, 'closed_at' => now()]);
+
+        Livewire::test(ClosingIndex::class)
+            ->call('confirmReopenMonth', $this->periods[1]->id)
+            ->call('executeConfirmedAction')
+            ->assertSet('showConfirmModal', false)
+            ->assertDispatched('showAlert');
+
+        $this->assertFalse($this->periods[1]->fresh()->is_closed);
+    }
 }

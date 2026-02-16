@@ -36,6 +36,16 @@
     </div>
 
     @if($showReport && $reportData && $trialBalanceData)
+        {{-- Download Buttons --}}
+        <div class="px-3 pt-3 d-flex justify-content-end gap-2">
+            <a href="{{ $downloadUrls['balance_sheet'] }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                <i class="ri-file-pdf-2-line me-1"></i> Download Neraca (PDF)
+            </a>
+            <a href="{{ $downloadUrls['trial_balance'] }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                <i class="ri-file-pdf-2-line me-1"></i> Download Neraca Saldo (PDF)
+            </a>
+        </div>
+
         {{-- ===== Tab Navigation ===== --}}
         <ul class="nav nav-tabs px-3 pt-3" id="neracaTab" role="tablist">
             <li class="nav-item" role="presentation">

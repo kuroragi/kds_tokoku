@@ -37,14 +37,6 @@
                             Laporan posisi keuangan: Neraca (balance sheet) dan Neraca Saldo (trial balance)
                         </p>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-info btn-sm" onclick="window.print()">
-                            <i class="ri-printer-line"></i> Cetak
-                        </button>
-                        <button type="button" class="btn btn-outline-success btn-sm">
-                            <i class="ri-file-excel-line"></i> Export
-                        </button>
-                    </div>
                 </div>
             </div>
 

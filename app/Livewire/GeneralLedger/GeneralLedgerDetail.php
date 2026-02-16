@@ -120,6 +120,22 @@ class GeneralLedgerDetail extends Component
             ->get();
     }
 
+    /**
+     * Get PDF download URL
+     */
+    public function getDownloadUrlProperty(): string
+    {
+        $params = array_filter([
+            'period_id' => $this->filterPeriod ?: null,
+            'date_from' => $this->dateFrom ?: null,
+            'date_to' => $this->dateTo ?: null,
+        ]);
+
+        $query = http_build_query($params);
+
+        return route('report.pdf.general-ledger.detail', $this->coa) . ($query ? '?' . $query : '');
+    }
+
     public function render()
     {
         return view('livewire.general-ledger.general-ledger-detail', [
@@ -128,6 +144,7 @@ class GeneralLedgerDetail extends Component
             'totalDebit' => $this->totalDebit,
             'totalCredit' => $this->totalCredit,
             'finalBalance' => $this->finalBalance,
+            'downloadUrl' => $this->downloadUrl,
         ]);
     }
 }

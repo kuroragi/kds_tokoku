@@ -24,9 +24,9 @@
                     title="Bersihkan Filter">
                     <i class="ri-filter-off-line"></i> Reset
                 </button>
-                <button type="button" class="btn btn-outline-info" onclick="window.print()">
-                    <i class="ri-printer-line"></i> Cetak
-                </button>
+                <a href="{{ $downloadUrl }}" class="btn btn-outline-danger" target="_blank">
+                    <i class="ri-file-pdf-2-line"></i> PDF
+                </a>
             </div>
         </div>
     </div>

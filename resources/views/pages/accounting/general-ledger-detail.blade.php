@@ -46,11 +46,6 @@
                             </p>
                         </div>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-success btn-sm" title="Export ke Excel">
-                            <i class="ri-file-excel-line"></i> Export
-                        </button>
-                    </div>
                 </div>
             </div>
 

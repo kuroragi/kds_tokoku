@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ReportController;
 use App\Livewire\Coa\CoaList;
 use App\Mail\SendMail;
 use Illuminate\Support\Facades\Mail;
@@ -29,6 +30,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('income-statement', [AccountingController::class, 'incomeStatement'])->name('income-statement');
     Route::get('adjusted-trial-balance', [AccountingController::class, 'adjustedTrialBalance'])->name('adjusted-trial-balance');
     Route::get('tax-closing', [AccountingController::class, 'taxClosing'])->name('tax-closing');
+
+    // PDF Report Downloads
+    Route::prefix('report/pdf')->name('report.pdf.')->group(function () {
+        Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
+        Route::get('balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
+        Route::get('income-statement', [ReportController::class, 'incomeStatement'])->name('income-statement');
+        Route::get('adjusted-trial-balance', [ReportController::class, 'adjustedTrialBalance'])->name('adjusted-trial-balance');
+        Route::get('general-ledger', [ReportController::class, 'generalLedger'])->name('general-ledger');
+        Route::get('general-ledger/{coa}', [ReportController::class, 'generalLedgerDetail'])->name('general-ledger.detail');
+    });
 
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 });

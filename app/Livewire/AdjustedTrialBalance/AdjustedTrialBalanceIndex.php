@@ -81,11 +81,22 @@ class AdjustedTrialBalanceIndex extends Component
         ]);
     }
 
+    /**
+     * Get PDF download URL
+     */
+    public function getDownloadUrlProperty(): string
+    {
+        $params = http_build_query($this->getFilters());
+
+        return route('report.pdf.adjusted-trial-balance') . ($params ? '?' . $params : '');
+    }
+
     public function render()
     {
         return view('livewire.adjusted-trial-balance.adjusted-trial-balance-index', [
             'reportData' => $this->reportData,
             'periods' => $this->periods,
+            'downloadUrl' => $this->downloadUrl,
         ]);
     }
 }

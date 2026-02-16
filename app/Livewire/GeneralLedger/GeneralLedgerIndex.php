@@ -146,6 +146,24 @@ class GeneralLedgerIndex extends Component
         ];
     }
 
+    /**
+     * Get PDF download URL
+     */
+    public function getDownloadUrlProperty(): string
+    {
+        $params = array_filter([
+            'period_id' => $this->filterPeriod ?: null,
+            'date_from' => $this->dateFrom ?: null,
+            'date_to' => $this->dateTo ?: null,
+            'coa_id' => $this->filterCoa ?: null,
+            'coa_type' => $this->filterCoaType ?: null,
+        ]);
+
+        $query = http_build_query($params);
+
+        return route('report.pdf.general-ledger') . ($query ? '?' . $query : '');
+    }
+
     public function render()
     {
         return view('livewire.general-ledger.general-ledger-index', [
@@ -155,6 +173,7 @@ class GeneralLedgerIndex extends Component
             'coaTypes' => $this->coaTypes,
             'grandTotalDebit' => $this->grandTotalDebit,
             'grandTotalCredit' => $this->grandTotalCredit,
+            'downloadUrl' => $this->downloadUrl,
         ]);
     }
 }

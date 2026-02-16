@@ -36,6 +36,13 @@
     </div>
 
     @if($showReport && $reportData)
+        {{-- Download Button --}}
+        <div class="px-3 pt-3 d-flex justify-content-end">
+            <a href="{{ $downloadUrl }}" class="btn btn-sm btn-outline-danger" target="_blank">
+                <i class="ri-file-pdf-2-line me-1"></i> Download PDF
+            </a>
+        </div>
+
         {{-- Balance Indicators --}}
         <div class="p-3 border-bottom">
             <div class="row g-2">

@@ -39,15 +39,6 @@
                             Rincian transaksi per akun dari jurnal yang sudah diposting
                         </p>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-info btn-sm" onclick="window.print()"
-                            title="Cetak">
-                            <i class="ri-printer-line"></i> Cetak
-                        </button>
-                        <button type="button" class="btn btn-outline-success btn-sm" title="Export ke Excel">
-                            <i class="ri-file-excel-line"></i> Export
-                        </button>
-                    </div>
                 </div>
             </div>
 

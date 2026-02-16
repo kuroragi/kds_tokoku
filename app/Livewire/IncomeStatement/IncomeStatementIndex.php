@@ -78,11 +78,22 @@ class IncomeStatementIndex extends Component
         ]);
     }
 
+    /**
+     * Get PDF download URL
+     */
+    public function getDownloadUrlProperty(): string
+    {
+        $params = http_build_query($this->getFilters());
+
+        return route('report.pdf.income-statement') . ($params ? '?' . $params : '');
+    }
+
     public function render()
     {
         return view('livewire.income-statement.income-statement-index', [
             'reportData' => $this->reportData,
             'periods' => $this->periods,
+            'downloadUrl' => $this->downloadUrl,
         ]);
     }
 }

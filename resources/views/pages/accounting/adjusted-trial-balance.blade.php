@@ -37,14 +37,6 @@
                             Worksheet: Neraca Saldo, Penyesuaian, dan Neraca Saldo Disesuaikan
                         </p>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-info btn-sm" onclick="window.print()">
-                            <i class="ri-printer-line"></i> Cetak
-                        </button>
-                        <button type="button" class="btn btn-outline-success btn-sm">
-                            <i class="ri-file-excel-line"></i> Export
-                        </button>
-                    </div>
                 </div>
             </div>
 

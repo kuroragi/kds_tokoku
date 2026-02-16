@@ -93,12 +93,26 @@ class TrialBalanceIndex extends Component
         ]);
     }
 
+    /**
+     * Get PDF download URLs
+     */
+    public function getDownloadUrlsProperty(): array
+    {
+        $params = http_build_query($this->getFilters());
+
+        return [
+            'balance_sheet' => route('report.pdf.balance-sheet') . ($params ? '?' . $params : ''),
+            'trial_balance' => route('report.pdf.trial-balance') . ($params ? '?' . $params : ''),
+        ];
+    }
+
     public function render()
     {
         return view('livewire.trial-balance.trial-balance-index', [
             'reportData' => $this->reportData,
             'trialBalanceData' => $this->trialBalanceData,
             'periods' => $this->periods,
+            'downloadUrls' => $this->downloadUrls,
         ]);
     }
 }

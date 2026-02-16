@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\COA;
 use App\Models\Journal;
+use App\Models\Period;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -11,7 +12,11 @@ class FinancialReportService
 {
     /**
      * Get Trial Balance data (Neraca Saldo)
-     * Returns per-account debit/credit totals from posted journals
+     * Returns per-account debit/credit totals from posted journals.
+     *
+     * CUMULATIVE: includes all journals from inception up to (and including)
+     * the selected period or date_to. This ensures permanent accounts
+     * (aktiva, pasiva, modal) carry their full historical balance.
      *
      * @param array $filters ['period_id' => ?, 'date_from' => ?, 'date_to' => ?]
      * @return array ['accounts' => Collection, 'total_debit' => float, 'total_credit' => float]
@@ -19,7 +24,7 @@ class FinancialReportService
     public function getTrialBalance(array $filters = []): array
     {
         $query = $this->baseQuery();
-        $this->applyFilters($query, $filters);
+        $this->applyCumulativeFilters($query, $filters);
 
         $accounts = $query->select([
                 'c_o_a_s.id as coa_id',
@@ -57,7 +62,11 @@ class FinancialReportService
 
     /**
      * Get Balance Sheet data (Neraca)
-     * Returns aktiva on one side, pasiva + modal + laba/rugi on the other
+     * Returns aktiva on one side, pasiva + modal + laba/rugi on the other.
+     *
+     * CUMULATIVE: includes all journals from inception up to the selected
+     * period or date_to, since a balance sheet represents the financial
+     * position at a specific point in time.
      *
      * @param array $filters ['period_id' => ?, 'date_from' => ?, 'date_to' => ?]
      * @return array
@@ -65,7 +74,7 @@ class FinancialReportService
     public function getBalanceSheet(array $filters = []): array
     {
         $query = $this->baseQuery();
-        $this->applyFilters($query, $filters);
+        $this->applyCumulativeFilters($query, $filters);
 
         $accounts = $query->select([
                 'c_o_a_s.id as coa_id',
@@ -106,7 +115,8 @@ class FinancialReportService
         $totalModal = $modal->sum('saldo');
 
         // Calculate net income (laba/rugi) from income statement
-        $incomeStatement = $this->getIncomeStatement($filters);
+        // Use cumulative filters for the income statement within balance sheet
+        $incomeStatement = $this->getIncomeStatement($filters, true);
         $labaRugi = $incomeStatement['net_income'];
 
         return [
@@ -124,15 +134,25 @@ class FinancialReportService
 
     /**
      * Get Income Statement data (Laporan Laba Rugi)
-     * Returns pendapatan and beban accounts with totals
+     * Returns pendapatan and beban accounts with totals.
+     *
+     * By default this is PERIOD-SPECIFIC (only the selected period/date range).
+     * When called from getBalanceSheet, it uses cumulative mode to match
+     * the balance sheet's cumulative perspective.
      *
      * @param array $filters ['period_id' => ?, 'date_from' => ?, 'date_to' => ?]
+     * @param bool  $cumulative When true, uses cumulative filters (for balance sheet integration)
      * @return array
      */
-    public function getIncomeStatement(array $filters = []): array
+    public function getIncomeStatement(array $filters = [], bool $cumulative = false): array
     {
         $query = $this->baseQuery();
-        $this->applyFilters($query, $filters);
+
+        if ($cumulative) {
+            $this->applyCumulativeFilters($query, $filters);
+        } else {
+            $this->applyFilters($query, $filters);
+        }
 
         // Only get pendapatan and beban
         $query->whereIn('c_o_a_s.type', ['pendapatan', 'beban']);
@@ -204,6 +224,10 @@ class FinancialReportService
      * Get Adjusted Trial Balance (Neraca Penyesuaian / Worksheet)
      * Shows: Original Trial Balance | Adjustments | Adjusted Trial Balance
      *
+     * NS columns: CUMULATIVE general journals from inception up to the selected period/date.
+     * ADJ columns: Only adjustment journals in the selected period/date range.
+     * NSD columns: NS + ADJ combined.
+     *
      * @param array $filters ['period_id' => ?, 'date_from' => ?, 'date_to' => ?]
      * @return array
      */
@@ -216,9 +240,9 @@ class FinancialReportService
             ->get()
             ->keyBy('id');
 
-        // 2) General journal totals (neraca saldo)
+        // 2) General journal totals (neraca saldo) — CUMULATIVE
         $generalQuery = $this->baseQueryByType('general');
-        $this->applyFilters($generalQuery, $filters);
+        $this->applyCumulativeFilters($generalQuery, $filters);
 
         $generalData = $generalQuery->select([
                 'c_o_a_s.id as coa_id',
@@ -229,7 +253,7 @@ class FinancialReportService
             ->get()
             ->keyBy('coa_id');
 
-        // 3) Adjustment journal totals (penyesuaian)
+        // 3) Adjustment journal totals (penyesuaian) — PERIOD-SPECIFIC
         $adjustmentQuery = $this->baseQueryByType('adjustment');
         $this->applyFilters($adjustmentQuery, $filters);
 
@@ -321,7 +345,8 @@ class FinancialReportService
     }
 
     /**
-     * Apply common filters to query
+     * Apply standard period/date-range filters to query.
+     * Used for period-specific reports (income statement, adjustment journals).
      */
     private function applyFilters($query, array $filters)
     {
@@ -336,5 +361,28 @@ class FinancialReportService
         if (!empty($filters['date_to'])) {
             $query->whereDate('journal_masters.journal_date', '<=', $filters['date_to']);
         }
+    }
+
+    /**
+     * Apply CUMULATIVE filters to query — from inception up to the end of
+     * the selected period or date_to.
+     *
+     * This ensures balance-sheet accounts carry their full historical balance.
+     * - If period_id is given: query all journals with date <= period.end_date
+     * - If date_to is given: query all journals with date <= date_to
+     * - date_from is IGNORED for cumulative reports (balance sheet always starts from inception)
+     * - If no filters given: returns all posted data (no date restriction)
+     */
+    private function applyCumulativeFilters($query, array $filters)
+    {
+        if (!empty($filters['period_id'])) {
+            $period = Period::find($filters['period_id']);
+            if ($period) {
+                $query->whereDate('journal_masters.journal_date', '<=', $period->end_date);
+            }
+        } elseif (!empty($filters['date_to'])) {
+            $query->whereDate('journal_masters.journal_date', '<=', $filters['date_to']);
+        }
+        // If only date_from or no filters: return all data (no restriction)
     }
 }

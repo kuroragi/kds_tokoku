@@ -403,25 +403,27 @@ class AdjustedTrialBalanceTest extends TestCase
 
     public function test_service_filters_by_period(): void
     {
-        // Current period transaction
+        // Current period transaction: 5M
         $this->createPostedGeneralJournal([
             ['coa_code' => '1101', 'debit' => 5000000, 'credit' => 0],
             ['coa_code' => '3101', 'debit' => 0, 'credit' => 5000000],
         ], $this->currentPeriod->id);
 
-        // Previous period transaction
+        // Previous period transaction: 3M
         $prevDate = now()->subMonth()->format('Y-m-') . '15';
         $this->createPostedGeneralJournal([
             ['coa_code' => '1101', 'debit' => 3000000, 'credit' => 0],
             ['coa_code' => '3101', 'debit' => 0, 'credit' => 3000000],
         ], $this->prevPeriod->id, $prevDate);
 
+        // NS column is CUMULATIVE: includes all general journals from inception up to the period end_date
         $result = $this->reportService->getAdjustedTrialBalance([
             'period_id' => $this->currentPeriod->id,
         ]);
 
+        // Cumulative NS: 5M (current) + 3M (previous) = 8M
         $cash = $result['accounts']->firstWhere('coa_code', '1101');
-        $this->assertEquals(5000000, $cash->ns_debit);
+        $this->assertEquals(8000000, $cash->ns_debit);
     }
 
     public function test_service_filters_by_date_range(): void

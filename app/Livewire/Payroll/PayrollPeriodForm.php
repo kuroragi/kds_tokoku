@@ -24,12 +24,14 @@ class PayrollPeriodForm extends Component
         $this->month = (int) date('m');
         $this->year = (int) date('Y');
         $this->showModal = true;
+        $this->dispatch('showPayrollPeriodModal');
     }
 
     public function closeModal()
     {
         $this->showModal = false;
         $this->resetForm();
+        $this->dispatch('closePayrollPeriodModal');
     }
 
     private function resetForm()

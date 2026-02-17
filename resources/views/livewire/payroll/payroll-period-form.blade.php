@@ -11,14 +11,14 @@
                         @if($isSuperAdmin)
                         <div class="mb-3">
                             <label class="form-label">Unit Usaha <span class="text-danger">*</span></label>
-                            <select class="form-select @error('businessUnitId') is-invalid @enderror"
-                                wire:model="businessUnitId">
+                            <select class="form-select @error('business_unit_id') is-invalid @enderror"
+                                wire:model="business_unit_id">
                                 <option value="">Pilih Unit Usaha</option>
                                 @foreach($units as $unit)
                                 <option value="{{ $unit->id }}">{{ $unit->name }}</option>
                                 @endforeach
                             </select>
-                            @error('businessUnitId')
+                            @error('business_unit_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -77,7 +77,7 @@
 
     @script
     <script>
-        $wire.on('openPayrollPeriodModal', () => {
+        $wire.on('showPayrollPeriodModal', () => {
             new bootstrap.Modal(document.getElementById('payrollPeriodModal')).show();
         });
         $wire.on('closePayrollPeriodModal', () => {

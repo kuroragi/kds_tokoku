@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountingController;
+use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MasterController;
 use App\Http\Controllers\PageController;
@@ -78,6 +79,25 @@ Route::middleware(['auth'])->group(function () {
         Route::get('customer', [MasterController::class, 'customerIndex'])->name('customer.index');
         Route::get('vendor', [MasterController::class, 'vendorIndex'])->name('vendor.index');
         Route::get('partner', [MasterController::class, 'partnerIndex'])->name('partner.index');
+    });
+
+    // Asset Management
+    Route::prefix('asset')->group(function () {
+        // Master Data
+        Route::get('category', [AssetController::class, 'assetCategoryIndex'])->name('asset-category.index');
+        Route::get('/', [AssetController::class, 'assetIndex'])->name('asset.index');
+
+        // Transactions
+        Route::get('depreciation', [AssetController::class, 'depreciationIndex'])->name('asset-depreciation.index');
+        Route::get('transfer', [AssetController::class, 'transferIndex'])->name('asset-transfer.index');
+        Route::get('disposal', [AssetController::class, 'disposalIndex'])->name('asset-disposal.index');
+        Route::get('repair', [AssetController::class, 'repairIndex'])->name('asset-repair.index');
+
+        // Reports
+        Route::get('report/register', [AssetController::class, 'reportRegister'])->name('asset-report.register');
+        Route::get('report/book-value', [AssetController::class, 'reportBookValue'])->name('asset-report.book-value');
+        Route::get('report/depreciation', [AssetController::class, 'reportDepreciation'])->name('asset-report.depreciation');
+        Route::get('report/history', [AssetController::class, 'reportHistory'])->name('asset-report.history');
     });
 });
 

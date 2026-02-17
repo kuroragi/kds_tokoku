@@ -1,0 +1,122 @@
+<div>
+    {{-- Header & Filters --}}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-lg-3">
+                    <label class="form-label small text-muted mb-1">Cari</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="ri-search-line"></i></span>
+                        <input type="text" class="form-control" wire:model.live.debounce.300ms="search"
+                            placeholder="Kode, nama, deskripsi...">
+                    </div>
+                </div>
+                @if($isSuperAdmin)
+                <div class="col-lg-2">
+                    <label class="form-label small text-muted mb-1">Unit Usaha</label>
+                    <select class="form-select form-select-sm" wire:model.live="filterUnit">
+                        <option value="">Semua Unit</option>
+                        @foreach($units as $unit)
+                        <option value="{{ $unit->id }}">{{ $unit->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+                <div class="col-lg-2">
+                    <label class="form-label small text-muted mb-1">Status</label>
+                    <select class="form-select form-select-sm" wire:model.live="filterStatus">
+                        <option value="">Semua Status</option>
+                        @foreach($statuses as $key => $label)
+                        <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-lg text-end">
+                    <button class="btn btn-primary btn-sm" wire:click="$dispatch('openAssetRepairModal')">
+                        <i class="ri-add-line"></i> Catat Perbaikan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Table --}}
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th width="3%" class="ps-3">#</th>
+                        <th width="8%">Kode Aset</th>
+                        <th width="12%">Nama Aset</th>
+                        <th width="10%" style="cursor:pointer" wire:click="sortBy('repair_date')">
+                            Tanggal @if($sortField === 'repair_date') <i class="ri-arrow-{{ $sortDirection === 'asc' ? 'up' : 'down' }}-s-line"></i> @endif
+                        </th>
+                        <th width="18%">Deskripsi</th>
+                        <th width="10%">Vendor</th>
+                        <th width="10%" class="text-end">Biaya</th>
+                        <th width="8%" class="text-center">Status</th>
+                        <th width="10%">Selesai</th>
+                        <th width="9%" class="text-center pe-3">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($repairs as $idx => $repair)
+                    <tr wire:key="rep-{{ $repair->id }}">
+                        <td class="ps-3 text-muted">{{ $idx + 1 }}</td>
+                        <td><code class="text-muted">{{ $repair->asset->code ?? '-' }}</code></td>
+                        <td>{{ $repair->asset->name ?? '-' }}</td>
+                        <td class="text-muted small">{{ $repair->repair_date->format('d/m/Y') }}</td>
+                        <td class="small">{{ Str::limit($repair->description, 50) }}</td>
+                        <td class="text-muted small">{{ $repair->vendor->name ?? '-' }}</td>
+                        <td class="text-end">Rp {{ number_format($repair->cost, 0, ',', '.') }}</td>
+                        <td class="text-center">
+                            @php
+                                $statusColors = ['pending' => 'warning', 'in_progress' => 'info', 'completed' => 'success'];
+                            @endphp
+                            <span class="badge bg-{{ $statusColors[$repair->status] ?? 'secondary' }} bg-opacity-75">
+                                {{ $statuses[$repair->status] ?? $repair->status }}
+                            </span>
+                        </td>
+                        <td class="text-muted small">{{ $repair->completed_date ? $repair->completed_date->format('d/m/Y') : '-' }}</td>
+                        <td class="text-center pe-3">
+                            <div class="btn-group btn-group-sm">
+                                @if($repair->status === 'pending')
+                                <button class="btn btn-outline-info" wire:click="updateRepairStatus({{ $repair->id }}, 'in_progress')" title="Mulai">
+                                    <i class="ri-play-line"></i>
+                                </button>
+                                @endif
+                                @if($repair->status === 'in_progress')
+                                <button class="btn btn-outline-success" wire:click="updateRepairStatus({{ $repair->id }}, 'completed')" title="Selesai">
+                                    <i class="ri-check-line"></i>
+                                </button>
+                                @endif
+                                <button class="btn btn-outline-primary" wire:click="$dispatch('editAssetRepair', { id: {{ $repair->id }} })" title="Edit">
+                                    <i class="ri-pencil-line"></i>
+                                </button>
+                                <button class="btn btn-outline-danger"
+                                    onclick="confirmDelete(() => @this.deleteRepair({{ $repair->id }}))"
+                                    title="Hapus">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="10" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="ri-tools-line" style="font-size: 3rem; opacity: 0.3;"></i>
+                                <p class="mt-2 mb-0">Belum ada catatan perbaikan</p>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-white py-2">
+            <small class="text-muted">Total: {{ $repairs->count() }} perbaikan</small>
+        </div>
+    </div>
+</div>

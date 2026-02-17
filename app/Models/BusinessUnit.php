@@ -89,6 +89,16 @@ class BusinessUnit extends Model
         return $this->hasMany(Partner::class);
     }
 
+    public function assetCategories()
+    {
+        return $this->hasMany(AssetCategory::class);
+    }
+
+    public function assets()
+    {
+        return $this->hasMany(Asset::class);
+    }
+
     // Helpers
     public function getCoaByKey(string $accountKey): ?COA
     {

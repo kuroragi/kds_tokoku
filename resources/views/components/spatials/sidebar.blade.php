@@ -202,6 +202,84 @@
                 </div>
             </li>
 
+            <li class="side-nav-title">Asset Management</li>
+
+            <li class="side-nav-item">
+                <a data-bs-toggle="collapse" href="#sidebarPagesAsset" aria-expanded="false"
+                    aria-controls="sidebarPagesAsset" class="side-nav-link">
+                    <i class="ri-tools-line"></i>
+                    <span> Manajemen Aset </span>
+                    <span class="menu-arrow"></span>
+                </a>
+                <div class="collapse" id="sidebarPagesAsset">
+                    <ul class="side-nav-second-level">
+                        <li class="{{ request()->routeIs('asset-category.*') ? 'active' : '' }}">
+                            <a href="{{ route('asset-category.index') }}">
+                                <i class="ri-folder-settings-line me-1"></i> Kategori Aset
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('asset.index') ? 'active' : '' }}">
+                            <a href="{{ route('asset.index') }}">
+                                <i class="ri-archive-drawer-line me-1"></i> Daftar Aset
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('asset-depreciation.*') ? 'active' : '' }}">
+                            <a href="{{ route('asset-depreciation.index') }}">
+                                <i class="ri-line-chart-line me-1"></i> Penyusutan
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('asset-transfer.*') ? 'active' : '' }}">
+                            <a href="{{ route('asset-transfer.index') }}">
+                                <i class="ri-arrow-left-right-line me-1"></i> Mutasi
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('asset-repair.*') ? 'active' : '' }}">
+                            <a href="{{ route('asset-repair.index') }}">
+                                <i class="ri-hammer-line me-1"></i> Perbaikan
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('asset-disposal.*') ? 'active' : '' }}">
+                            <a href="{{ route('asset-disposal.index') }}">
+                                <i class="ri-delete-bin-line me-1"></i> Disposal
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <li class="side-nav-item">
+                <a data-bs-toggle="collapse" href="#sidebarPagesAssetReport" aria-expanded="false"
+                    aria-controls="sidebarPagesAssetReport" class="side-nav-link">
+                    <i class="ri-file-chart-line"></i>
+                    <span> Laporan Aset </span>
+                    <span class="menu-arrow"></span>
+                </a>
+                <div class="collapse" id="sidebarPagesAssetReport">
+                    <ul class="side-nav-second-level">
+                        <li class="{{ request()->routeIs('asset-report.register') ? 'active' : '' }}">
+                            <a href="{{ route('asset-report.register') }}">
+                                <i class="ri-list-check-2 me-1"></i> Daftar Aset
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('asset-report.book-value') ? 'active' : '' }}">
+                            <a href="{{ route('asset-report.book-value') }}">
+                                <i class="ri-money-dollar-circle-line me-1"></i> Nilai Buku
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('asset-report.depreciation') ? 'active' : '' }}">
+                            <a href="{{ route('asset-report.depreciation') }}">
+                                <i class="ri-bar-chart-grouped-line me-1"></i> Penyusutan per Periode
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('asset-report.history') ? 'active' : '' }}">
+                            <a href="{{ route('asset-report.history') }}">
+                                <i class="ri-history-line me-1"></i> Riwayat Aset
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
             <li class="side-nav-title">Transaction</li>
 
             <li class="side-nav-item">

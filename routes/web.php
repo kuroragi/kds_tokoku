@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountingController;
+use App\Http\Controllers\ApArController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MasterController;
@@ -98,6 +99,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('report/book-value', [AssetController::class, 'reportBookValue'])->name('asset-report.book-value');
         Route::get('report/depreciation', [AssetController::class, 'reportDepreciation'])->name('asset-report.depreciation');
         Route::get('report/history', [AssetController::class, 'reportHistory'])->name('asset-report.history');
+    });
+
+    // AP/AR (Hutang / Piutang)
+    Route::prefix('apar')->group(function () {
+        Route::get('payable', [ApArController::class, 'payableIndex'])->name('payable.index');
+        Route::get('receivable', [ApArController::class, 'receivableIndex'])->name('receivable.index');
+
+        // Reports
+        Route::get('report/aging', [ApArController::class, 'reportAging'])->name('apar-report.aging');
+        Route::get('report/outstanding', [ApArController::class, 'reportOutstanding'])->name('apar-report.outstanding');
+        Route::get('report/payment-history', [ApArController::class, 'reportPaymentHistory'])->name('apar-report.payment-history');
     });
 });
 

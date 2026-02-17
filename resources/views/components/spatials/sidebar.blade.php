@@ -399,6 +399,57 @@
             <li class="side-nav-title">Financial Management</li>
 
             <li class="side-nav-item">
+                <a data-bs-toggle="collapse" href="#sidebarPagesApAr" aria-expanded="false"
+                    aria-controls="sidebarPagesApAr" class="side-nav-link">
+                    <i class="ri-exchange-funds-line"></i>
+                    <span> Hutang / Piutang </span>
+                    <span class="menu-arrow"></span>
+                </a>
+                <div class="collapse" id="sidebarPagesApAr">
+                    <ul class="side-nav-second-level">
+                        <li class="{{ request()->routeIs('payable.*') ? 'active' : '' }}">
+                            <a href="{{ route('payable.index') }}">
+                                <i class="ri-money-dollar-box-line me-1"></i> Hutang Usaha
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('receivable.*') ? 'active' : '' }}">
+                            <a href="{{ route('receivable.index') }}">
+                                <i class="ri-hand-coin-line me-1"></i> Piutang Usaha
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <li class="side-nav-item">
+                <a data-bs-toggle="collapse" href="#sidebarPagesApArReport" aria-expanded="false"
+                    aria-controls="sidebarPagesApArReport" class="side-nav-link">
+                    <i class="ri-file-chart-line"></i>
+                    <span> Laporan AP/AR </span>
+                    <span class="menu-arrow"></span>
+                </a>
+                <div class="collapse" id="sidebarPagesApArReport">
+                    <ul class="side-nav-second-level">
+                        <li class="{{ request()->routeIs('apar-report.aging') ? 'active' : '' }}">
+                            <a href="{{ route('apar-report.aging') }}">
+                                <i class="ri-timer-line me-1"></i> Aging Report
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('apar-report.outstanding') ? 'active' : '' }}">
+                            <a href="{{ route('apar-report.outstanding') }}">
+                                <i class="ri-file-list-3-line me-1"></i> Outstanding Report
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('apar-report.payment-history') ? 'active' : '' }}">
+                            <a href="{{ route('apar-report.payment-history') }}">
+                                <i class="ri-history-line me-1"></i> Riwayat Pembayaran
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <li class="side-nav-item">
                 <a data-bs-toggle="collapse" href="#sidebarPagesLoan" aria-expanded="false"
                     aria-controls="sidebarPagesLoan" class="side-nav-link">
                     <i class="bi bi-cash-coin"></i>

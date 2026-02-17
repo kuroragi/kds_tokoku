@@ -24,6 +24,7 @@ class Vendor extends Model
         'nik',
         'is_pph23',
         'pph23_rate',
+        'is_net_pph23',
         'bank_name',
         'bank_account_number',
         'bank_account_name',
@@ -34,6 +35,7 @@ class Vendor extends Model
 
     protected $casts = [
         'is_pph23' => 'boolean',
+        'is_net_pph23' => 'boolean',
         'is_active' => 'boolean',
         'pph23_rate' => 'decimal:2',
     ];

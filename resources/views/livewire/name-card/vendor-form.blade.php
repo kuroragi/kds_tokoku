@@ -123,6 +123,16 @@
                                     wire:model="pph23_rate" placeholder="2.00">
                                 @error('pph23_rate') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Basis Net</label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" wire:model="is_net_pph23" id="vendorNetPph23">
+                                    <label class="form-check-label" for="vendorNetPph23">
+                                        {{ $is_net_pph23 ? 'Ya' : 'Tidak' }}
+                                    </label>
+                                </div>
+                                <small class="text-muted">Vendor mau terima net?</small>
+                            </div>
                             @endif
                         </div>
 

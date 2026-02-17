@@ -26,6 +26,7 @@ class VendorForm extends Component
     public $nik = '';
     public $is_pph23 = false;
     public $pph23_rate = '2.00';
+    public $is_net_pph23 = false;
     public $bank_name = '';
     public $bank_account_number = '';
     public $bank_account_name = '';
@@ -60,6 +61,7 @@ class VendorForm extends Component
         $this->nik = $vendor->nik ?? '';
         $this->is_pph23 = $vendor->is_pph23;
         $this->pph23_rate = $vendor->pph23_rate ?? '2.00';
+        $this->is_net_pph23 = $vendor->is_net_pph23;
         $this->bank_name = $vendor->bank_name ?? '';
         $this->bank_account_number = $vendor->bank_account_number ?? '';
         $this->bank_account_name = $vendor->bank_account_name ?? '';
@@ -98,6 +100,7 @@ class VendorForm extends Component
         $this->nik = '';
         $this->is_pph23 = false;
         $this->pph23_rate = '2.00';
+        $this->is_net_pph23 = false;
         $this->bank_name = '';
         $this->bank_account_number = '';
         $this->bank_account_name = '';
@@ -125,6 +128,7 @@ class VendorForm extends Component
             'nik' => 'nullable|string|max:20',
             'is_pph23' => 'boolean',
             'pph23_rate' => 'nullable|numeric|min:0|max:100',
+            'is_net_pph23' => 'boolean',
             'bank_name' => 'nullable|string|max:255',
             'bank_account_number' => 'nullable|string|max:30',
             'bank_account_name' => 'nullable|string|max:255',
@@ -158,6 +162,7 @@ class VendorForm extends Component
             'nik' => $this->nik ?: null,
             'is_pph23' => $this->is_pph23,
             'pph23_rate' => $this->is_pph23 ? $this->pph23_rate : 2.00,
+            'is_net_pph23' => $this->is_pph23 ? $this->is_net_pph23 : false,
             'bank_name' => $this->bank_name ?: null,
             'bank_account_number' => $this->bank_account_number ?: null,
             'bank_account_name' => $this->bank_account_name ?: null,

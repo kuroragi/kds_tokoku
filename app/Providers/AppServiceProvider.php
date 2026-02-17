@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\BusinessUnit;
+use App\Observers\BusinessUnitObserver;
 use Illuminate\Support\ServiceProvider;
 use Kuroragi\GeneralHelper\Macros\BlueprintMacros;
 
@@ -21,5 +23,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         BlueprintMacros::register();
+        BusinessUnit::observe(BusinessUnitObserver::class);
     }
 }

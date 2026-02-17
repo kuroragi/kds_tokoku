@@ -70,11 +70,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('unit-of-measure', [MasterController::class, 'unitOfMeasureIndex'])->name('unit-of-measure.index');
         Route::get('stock', [MasterController::class, 'stockIndex'])->name('stock.index');
 
-        // Stock Management
-        Route::get('stock-category', [MasterController::class, 'stockCategoryIndex'])->name('stock-category.index');
-        Route::get('category-group', [MasterController::class, 'categoryGroupIndex'])->name('category-group.index');
-        Route::get('unit-of-measure', [MasterController::class, 'unitOfMeasureIndex'])->name('unit-of-measure.index');
-        Route::get('stock', [MasterController::class, 'stockIndex'])->name('stock.index');
+        // Jabatan (Position)
+        Route::get('position', [MasterController::class, 'positionIndex'])->name('position.index');
+
+        // Kartu Nama
+        Route::get('employee', [MasterController::class, 'employeeIndex'])->name('employee.index');
+        Route::get('customer', [MasterController::class, 'customerIndex'])->name('customer.index');
+        Route::get('vendor', [MasterController::class, 'vendorIndex'])->name('vendor.index');
+        Route::get('partner', [MasterController::class, 'partnerIndex'])->name('partner.index');
     });
 });
 

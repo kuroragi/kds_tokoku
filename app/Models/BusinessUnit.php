@@ -63,6 +63,32 @@ class BusinessUnit extends Model
         return $this->hasMany(Stock::class);
     }
 
+    public function positions()
+    {
+        return $this->hasMany(Position::class);
+    }
+
+    public function employees()
+    {
+        return $this->hasMany(Employee::class);
+    }
+
+    public function customers()
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+    public function vendors()
+    {
+        return $this->belongsToMany(Vendor::class, 'business_unit_vendor')
+            ->withTimestamps();
+    }
+
+    public function partners()
+    {
+        return $this->hasMany(Partner::class);
+    }
+
     // Helpers
     public function getCoaByKey(string $accountKey): ?COA
     {

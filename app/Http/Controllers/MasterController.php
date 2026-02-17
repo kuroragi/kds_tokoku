@@ -64,4 +64,34 @@ class MasterController extends Controller
     {
         return view('pages.master.stock');
     }
+
+    // Position (Jabatan)
+    public function positionIndex()
+    {
+        return view('pages.master.position');
+    }
+
+    // Employee (Karyawan)
+    public function employeeIndex()
+    {
+        return view('pages.master.employee');
+    }
+
+    // Customer (Pelanggan)
+    public function customerIndex()
+    {
+        return view('pages.master.customer');
+    }
+
+    // Vendor
+    public function vendorIndex()
+    {
+        return view('pages.master.vendor');
+    }
+
+    // Partner
+    public function partnerIndex()
+    {
+        return view('pages.master.partner');
+    }
 }

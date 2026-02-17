@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             BusinessUnitSeeder::class,
             UnitOfMeasureSeeder::class,
+            PositionSeeder::class,
         ]);
     } 
 }

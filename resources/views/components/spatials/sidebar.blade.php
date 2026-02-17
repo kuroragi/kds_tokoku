@@ -68,6 +68,11 @@
                                 <i class="ri-key-2-line me-1"></i> Permission
                             </a>
                         </li>
+                        <li class="{{ request()->routeIs('position.*') ? 'active' : '' }}">
+                            <a href="{{ route('position.index') }}">
+                                <i class="ri-briefcase-line me-1"></i> Jabatan
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </li>
@@ -173,29 +178,25 @@
                 </a>
                 <div class="collapse" id="sidebarPagesNameCards">
                     <ul class="side-nav-second-level">
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('mitra.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('mitra.index') }}"> --}}
-                                    <i class="bi bi-people me-1"></i> Mitra
-                                </a>
+                        <li class="{{ request()->routeIs('employee.*') ? 'active' : '' }}">
+                            <a href="{{ route('employee.index') }}">
+                                <i class="ri-user-line me-1"></i> Karyawan
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('distributor.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('distributor.index') }}"> --}}
-                                    <i class="bi bi-truck me-1"></i> Distributor
-                                </a>
+                        <li class="{{ request()->routeIs('customer.*') ? 'active' : '' }}">
+                            <a href="{{ route('customer.index') }}">
+                                <i class="ri-user-heart-line me-1"></i> Pelanggan
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('customer.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('customer.index') }}"> --}}
-                                    <i class="bi bi-person-check me-1"></i> Pelanggan
-                                </a>
+                        <li class="{{ request()->routeIs('vendor.*') ? 'active' : '' }}">
+                            <a href="{{ route('vendor.index') }}">
+                                <i class="ri-truck-line me-1"></i> Vendor
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('partner.*') ? 'active' : '' }}">
+                            <a href="{{ route('partner.index') }}">
+                                <i class="ri-team-line me-1"></i> Partner
+                            </a>
                         </li>
                     </ul>
                 </div>

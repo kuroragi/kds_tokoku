@@ -37,6 +37,7 @@
 
             @livewire('name-card.employee-list')
             @livewire('name-card.employee-form')
+            @livewire('name-card.employee-salary-assignment')
         </div>
     </div>
 </div>

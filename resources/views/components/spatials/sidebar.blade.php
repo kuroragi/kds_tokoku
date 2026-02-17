@@ -458,13 +458,68 @@
                 </a>
                 <div class="collapse" id="sidebarPagesLoan">
                     <ul class="side-nav-second-level">
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('pinjaman.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('pinjaman.index') }}"> --}}
-                                    <i class="bi bi-wallet2 me-1"></i> Pinjaman
-                                </a>
+                        <li class="{{ request()->routeIs('employee-loan.*') ? 'active' : '' }}">
+                            <a href="{{ route('employee-loan.index') }}">
+                                <i class="bi bi-wallet2 me-1"></i> Pinjaman Karyawan
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <li class="side-nav-title">Payroll</li>
+
+            <li class="side-nav-item">
+                <a data-bs-toggle="collapse" href="#sidebarPagesPayroll" aria-expanded="false"
+                    aria-controls="sidebarPagesPayroll" class="side-nav-link">
+                    <i class="ri-money-dollar-circle-line"></i>
+                    <span> Penggajian </span>
+                    <span class="menu-arrow"></span>
+                </a>
+                <div class="collapse" id="sidebarPagesPayroll">
+                    <ul class="side-nav-second-level">
+                        <li class="{{ request()->routeIs('salary-component.*') ? 'active' : '' }}">
+                            <a href="{{ route('salary-component.index') }}">
+                                <i class="ri-list-check me-1"></i> Komponen Gaji
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('payroll-setting.*') ? 'active' : '' }}">
+                            <a href="{{ route('payroll-setting.index') }}">
+                                <i class="ri-settings-3-line me-1"></i> Setting Payroll
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('payroll.*') ? 'active' : '' }}">
+                            <a href="{{ route('payroll.index') }}">
+                                <i class="ri-wallet-3-line me-1"></i> Payroll
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <li class="side-nav-item">
+                <a data-bs-toggle="collapse" href="#sidebarPagesPayrollReport" aria-expanded="false"
+                    aria-controls="sidebarPagesPayrollReport" class="side-nav-link">
+                    <i class="ri-bar-chart-box-line"></i>
+                    <span> Laporan Payroll </span>
+                    <span class="menu-arrow"></span>
+                </a>
+                <div class="collapse" id="sidebarPagesPayrollReport">
+                    <ul class="side-nav-second-level">
+                        <li class="{{ request()->routeIs('payroll-report.recap') ? 'active' : '' }}">
+                            <a href="{{ route('payroll-report.recap') }}">
+                                <i class="ri-file-chart-line me-1"></i> Rekap Payroll
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('payroll-report.employee') ? 'active' : '' }}">
+                            <a href="{{ route('payroll-report.employee') }}">
+                                <i class="ri-user-line me-1"></i> Laporan per Karyawan
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('payroll-report.bpjs') ? 'active' : '' }}">
+                            <a href="{{ route('payroll-report.bpjs') }}">
+                                <i class="ri-shield-cross-line me-1"></i> Laporan BPJS
+                            </a>
                         </li>
                     </ul>
                 </div>

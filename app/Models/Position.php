@@ -36,6 +36,11 @@ class Position extends Model
         return $this->hasMany(Employee::class);
     }
 
+    public function salaryComponentDefaults()
+    {
+        return $this->hasMany(PositionSalaryComponent::class);
+    }
+
     // Scopes
     public function scopeActive($query)
     {

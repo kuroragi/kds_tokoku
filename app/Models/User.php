@@ -59,6 +59,11 @@ class User extends Authenticatable
         return $this->belongsTo(BusinessUnit::class);
     }
 
+    public function employee()
+    {
+        return $this->hasOne(Employee::class);
+    }
+
     // Scopes
     public function scopeActive($query)
     {

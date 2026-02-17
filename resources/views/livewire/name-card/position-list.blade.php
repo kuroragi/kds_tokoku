@@ -108,6 +108,9 @@
                         </td>
                         <td class="text-center pe-3">
                             <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-success" wire:click="$dispatch('openPositionSalaryTemplate', { id: {{ $position->id }} })" title="Template Gaji">
+                                    <i class="ri-money-dollar-circle-line"></i>
+                                </button>
                                 <button class="btn btn-outline-primary" wire:click="$dispatch('editPosition', { id: {{ $position->id }} })" title="Edit">
                                     <i class="ri-pencil-line"></i>
                                 </button>

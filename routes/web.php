@@ -4,8 +4,10 @@ use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\ApArController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\LoanController;
 use App\Http\Controllers\MasterController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ReportController;
 use App\Livewire\Coa\CoaList;
 use App\Mail\SendMail;
@@ -110,6 +112,26 @@ Route::middleware(['auth'])->group(function () {
         Route::get('report/aging', [ApArController::class, 'reportAging'])->name('apar-report.aging');
         Route::get('report/outstanding', [ApArController::class, 'reportOutstanding'])->name('apar-report.outstanding');
         Route::get('report/payment-history', [ApArController::class, 'reportPaymentHistory'])->name('apar-report.payment-history');
+    });
+
+    // Payroll
+    Route::prefix('payroll')->group(function () {
+        Route::get('salary-component', [PayrollController::class, 'salaryComponentIndex'])->name('salary-component.index');
+        Route::get('setting', [PayrollController::class, 'payrollSettingIndex'])->name('payroll-setting.index');
+        Route::get('/', [PayrollController::class, 'payrollIndex'])->name('payroll.index');
+
+        // Payroll Reports (before wildcard)
+        Route::get('report/recap', [PayrollController::class, 'reportRecap'])->name('payroll-report.recap');
+        Route::get('report/employee', [PayrollController::class, 'reportEmployee'])->name('payroll-report.employee');
+        Route::get('report/bpjs', [PayrollController::class, 'reportBpjs'])->name('payroll-report.bpjs');
+
+        Route::get('{payrollPeriod}', [PayrollController::class, 'payrollDetail'])->name('payroll.detail');
+    });
+
+    // Pinjaman Karyawan
+    Route::prefix('loan')->group(function () {
+        Route::get('/', [LoanController::class, 'loanIndex'])->name('employee-loan.index');
+        Route::get('{loan}', [LoanController::class, 'loanDetail'])->name('employee-loan.detail');
     });
 });
 

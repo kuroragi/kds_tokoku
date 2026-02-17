@@ -1,6 +1,6 @@
 @extends('components.layouts.app')
 
-@section('title', 'Jabatan')
+@section('title', 'Komponen Gaji')
 
 @section('content')
 <div>
@@ -11,10 +11,10 @@
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
                             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item active">Jabatan</li>
+                            <li class="breadcrumb-item active">Komponen Gaji</li>
                         </ol>
                     </div>
-                    <h4 class="page-title">Jabatan</h4>
+                    <h4 class="page-title">Komponen Gaji</h4>
                 </div>
             </div>
         </div>
@@ -27,17 +27,16 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="mb-0">
-                            <i class="ri-briefcase-line text-primary me-2"></i>
-                            Daftar Jabatan
+                            <i class="ri-list-check text-primary me-2"></i>
+                            Komponen Gaji
                         </h5>
-                        <p class="text-muted mb-0 small">Kelola jabatan karyawan</p>
+                        <p class="text-muted mb-0 small">Kelola komponen penghasilan, potongan, dan BPJS</p>
                     </div>
                 </div>
             </div>
 
-            @livewire('name-card.position-list')
-            @livewire('name-card.position-form')
-            @livewire('name-card.position-salary-template')
+            @livewire('payroll.salary-component-list')
+            @livewire('payroll.salary-component-form')
         </div>
     </div>
 </div>

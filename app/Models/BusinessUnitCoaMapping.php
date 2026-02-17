@@ -35,6 +35,7 @@ class BusinessUnitCoaMapping extends Model
                 ['key' => 'kas_kecil', 'label' => 'Kas Kecil'],
                 ['key' => 'bank_utama', 'label' => 'Bank Utama'],
                 ['key' => 'piutang_usaha', 'label' => 'Piutang Usaha'],
+                ['key' => 'piutang_karyawan', 'label' => 'Piutang Karyawan'],
                 ['key' => 'persediaan_barang', 'label' => 'Persediaan Barang Dagang'],
                 ['key' => 'perlengkapan', 'label' => 'Perlengkapan'],
                 ['key' => 'peralatan', 'label' => 'Peralatan'],

@@ -147,21 +147,25 @@
                 </a>
                 <div class="collapse" id="sidebarPagesSaldoManagements">
                     <ul class="side-nav-second-level">
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('saldo-product.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('saldo-product.index') }}"> --}}
-                                    <i class="bi bi-people me-1"></i> Produk Saldo
-                                </a>
+                        <li class="{{ request()->routeIs('saldo-provider.index') ? 'active' : '' }}">
+                            <a href="{{ route('saldo-provider.index') }}">
+                                <i class="bi bi-credit-card-2-front me-1"></i> Penyedia Saldo
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('saldo-service.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('saldo-service.index') }}"> --}}
-                                    <i class="bi bi-truck me-1"></i> Service Saldo
-                                </a>
+                        <li class="{{ request()->routeIs('saldo-product.index') ? 'active' : '' }}">
+                            <a href="{{ route('saldo-product.index') }}">
+                                <i class="ri-shopping-bag-line me-1"></i> Produk Saldo
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('saldo-topup.index') ? 'active' : '' }}">
+                            <a href="{{ route('saldo-topup.index') }}">
+                                <i class="ri-wallet-3-line me-1"></i> Top Up Saldo
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('saldo-transaction.index') ? 'active' : '' }}">
+                            <a href="{{ route('saldo-transaction.index') }}">
+                                <i class="ri-exchange-funds-line me-1"></i> Transaksi Saldo
+                            </a>
                         </li>
                     </ul>
                 </div>

@@ -6,9 +6,12 @@ use App\Models\PurchaseOrder;
 use App\Services\BusinessUnitService;
 use App\Services\PurchaseService;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class PurchaseOrderList extends Component
 {
+    use WithPagination;
+
     public $search = '';
     public $filterUnit = '';
     public $filterStatus = '';
@@ -45,7 +48,7 @@ class PurchaseOrderList extends Component
             $query->where('status', $this->filterStatus);
         }
 
-        return $query->orderBy($this->sortField, $this->sortDirection)->get();
+        return $query->orderBy($this->sortField, $this->sortDirection)->paginate(15);
     }
 
     public function getUnitsProperty()

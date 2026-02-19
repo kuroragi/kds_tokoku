@@ -12,7 +12,10 @@ class PurchaseItem extends Model
 
     protected $fillable = [
         'purchase_id',
+        'item_type',
+        'description',
         'stock_id',
+        'saldo_provider_id',
         'purchase_order_item_id',
         'quantity',
         'unit_price',
@@ -44,4 +47,17 @@ class PurchaseItem extends Model
     {
         return $this->belongsTo(PurchaseOrderItem::class);
     }
+
+    public function saldoProvider()
+    {
+        return $this->belongsTo(SaldoProvider::class);
+    }
+
+    // ─── Constants ───
+
+    public const ITEM_TYPES = [
+        'goods' => 'Barang',
+        'saldo' => 'Saldo',
+        'service' => 'Jasa',
+    ];
 }

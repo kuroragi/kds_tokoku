@@ -6,9 +6,12 @@ use App\Models\Purchase;
 use App\Services\BusinessUnitService;
 use App\Services\PurchaseService;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class PurchaseList extends Component
 {
+    use WithPagination;
+
     public $search = '';
     public $filterUnit = '';
     public $filterStatus = '';
@@ -53,7 +56,7 @@ class PurchaseList extends Component
             $query->where('payment_type', $this->filterPaymentType);
         }
 
-        return $query->orderBy($this->sortField, $this->sortDirection)->get();
+        return $query->orderBy($this->sortField, $this->sortDirection)->paginate(15);
     }
 
     public function getUnitsProperty()

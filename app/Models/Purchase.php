@@ -16,6 +16,7 @@ class Purchase extends Model
         'vendor_id',
         'purchase_order_id',
         'invoice_number',
+        'purchase_type',
         'purchase_date',
         'due_date',
         'notes',
@@ -24,6 +25,7 @@ class Purchase extends Model
         'tax',
         'grand_total',
         'payment_type',
+        'payment_source',
         'paid_amount',
         'down_payment_amount',
         'remaining_amount',
@@ -49,6 +51,13 @@ class Purchase extends Model
         'credit' => 'Hutang (Kredit)',
         'partial' => 'Bayar Sebagian',
         'down_payment' => 'Uang Muka (DP)',
+    ];
+
+    public const PURCHASE_TYPES = [
+        'goods' => 'Barang',
+        'saldo' => 'Saldo',
+        'service' => 'Jasa',
+        'mix' => 'Campuran',
     ];
 
     public const PAYMENT_STATUSES = [
@@ -149,5 +158,10 @@ class Purchase extends Model
     public function getTypeLabel(): string
     {
         return $this->isDirect() ? 'Pembelian Langsung' : 'Dari PO';
+    }
+
+    public function getPurchaseTypeLabel(): string
+    {
+        return self::PURCHASE_TYPES[$this->purchase_type] ?? $this->purchase_type;
     }
 }

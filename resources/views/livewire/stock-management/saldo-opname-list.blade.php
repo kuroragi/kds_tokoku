@@ -23,7 +23,7 @@
                 <option value="cancelled">Dibatalkan</option>
             </select>
         </div>
-        <button class="btn btn-primary btn-sm" wire:click="$dispatch('openSaldoOpnameForm')">
+        <button class="btn btn-primary btn-sm" wire:click="$dispatch('openSaldoOpnameModal')">
             <i class="ri-add-line"></i> Opname Saldo Baru
         </button>
     </div>
@@ -83,15 +83,15 @@
                     <td>
                         @if($opname->status === 'draft')
                         <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-success" wire:click="approve({{ $opname->id }})"
+                            <button class="btn btn-outline-success" wire:click="approveOpname({{ $opname->id }})"
                                 wire:confirm="Setujui opname saldo ini? Saldo provider akan disesuaikan.">
                                 <i class="ri-check-double-line"></i>
                             </button>
-                            <button class="btn btn-outline-danger" wire:click="cancel({{ $opname->id }})"
+                            <button class="btn btn-outline-danger" wire:click="cancelOpname({{ $opname->id }})"
                                 wire:confirm="Batalkan opname saldo ini?">
                                 <i class="ri-close-line"></i>
                             </button>
-                            <button class="btn btn-outline-secondary" wire:click="delete({{ $opname->id }})"
+                            <button class="btn btn-outline-secondary" wire:click="deleteOpname({{ $opname->id }})"
                                 wire:confirm="Hapus draft opname saldo ini?">
                                 <i class="ri-delete-bin-line"></i>
                             </button>

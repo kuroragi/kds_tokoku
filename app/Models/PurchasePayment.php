@@ -16,6 +16,7 @@ class PurchasePayment extends Model
         'amount',
         'payment_date',
         'payment_method',
+        'payment_source',
         'reference_no',
         'notes',
         'journal_master_id',
@@ -29,7 +30,8 @@ class PurchasePayment extends Model
     public const PAYMENT_METHODS = [
         'cash' => 'Tunai',
         'bank_transfer' => 'Transfer Bank',
-        'e-wallet' => 'E-Wallet',
+        'giro' => 'Giro',
+        'e_wallet' => 'E-Wallet',
         'other' => 'Lainnya',
     ];
 

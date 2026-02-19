@@ -17,10 +17,21 @@ class PurchasePaymentForm extends Component
     public $amount = 0;
     public $payment_date = '';
     public $payment_method = 'cash';
+    public $payment_source = 'kas_utama'; // kas_utama, kas_kecil, bank_utama
     public $reference_no = '';
     public $notes = '';
 
     protected $listeners = ['openPurchasePaymentModal'];
+
+    /**
+     * Auto-set payment_source based on payment_method.
+     */
+    public function updatedPaymentMethod($value)
+    {
+        $this->payment_source = in_array($value, ['bank_transfer', 'giro', 'e_wallet'])
+            ? 'bank_utama'
+            : 'kas_utama';
+    }
 
     public function openPurchasePaymentModal($purchaseId)
     {
@@ -45,6 +56,7 @@ class PurchasePaymentForm extends Component
         $this->amount = 0;
         $this->payment_date = '';
         $this->payment_method = 'cash';
+        $this->payment_source = 'kas_utama';
         $this->reference_no = '';
         $this->notes = '';
         $this->resetValidation();
@@ -55,7 +67,8 @@ class PurchasePaymentForm extends Component
         return [
             'amount' => 'required|numeric|min:1',
             'payment_date' => 'required|date',
-            'payment_method' => 'required|in:cash,bank_transfer,e-wallet,other',
+            'payment_method' => 'required|in:cash,bank_transfer,giro,e_wallet,other',
+            'payment_source' => 'required|in:kas_utama,kas_kecil,bank_utama',
             'reference_no' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:1000',
         ];
@@ -66,6 +79,8 @@ class PurchasePaymentForm extends Component
         'amount.min' => 'Jumlah pembayaran minimal 1.',
         'payment_date.required' => 'Tanggal pembayaran wajib diisi.',
         'payment_method.required' => 'Metode pembayaran wajib dipilih.',
+        'payment_source.required' => 'Sumber pembayaran wajib dipilih.',
+        'payment_source.in' => 'Sumber pembayaran tidak valid.',
     ];
 
     public function save()
@@ -79,6 +94,7 @@ class PurchasePaymentForm extends Component
             'amount' => $this->amount,
             'payment_date' => $this->payment_date,
             'payment_method' => $this->payment_method,
+            'payment_source' => $this->payment_source,
             'reference_no' => $this->reference_no ?: null,
             'notes' => $this->notes ?: null,
         ]);

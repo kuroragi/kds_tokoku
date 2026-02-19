@@ -61,4 +61,16 @@ class SaldoOpname extends Model
     {
         return $query->where('status', $status);
     }
+
+    // ─── Helpers ───
+
+    public function getTotalDifferenceAttribute(): float
+    {
+        return (float) $this->details->sum('difference');
+    }
+
+    public function hasAdjustments(): bool
+    {
+        return $this->details->contains(fn ($d) => $d->difference != 0);
+    }
 }

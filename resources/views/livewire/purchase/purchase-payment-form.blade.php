@@ -12,16 +12,16 @@
                 <form wire:submit="save">
                     <div class="modal-body">
                         {{-- Purchase Info --}}
-                        @if($purchase)
+                        @if($purchaseInfo)
                         <div class="alert alert-light border mb-3">
                             <div class="row small">
-                                <div class="col-6"><strong>No. Invoice:</strong> {{ $purchase->invoice_number }}</div>
-                                <div class="col-6"><strong>Vendor:</strong> {{ $purchase->vendor->name }}</div>
-                                <div class="col-6 mt-1"><strong>Grand Total:</strong> Rp {{ number_format($purchase->grand_total, 0, ',', '.') }}</div>
-                                <div class="col-6 mt-1"><strong>Sudah Dibayar:</strong> Rp {{ number_format($purchase->paid_amount, 0, ',', '.') }}</div>
+                                <div class="col-6"><strong>No. Invoice:</strong> {{ $purchaseInfo->invoice_number }}</div>
+                                <div class="col-6"><strong>Vendor:</strong> {{ $purchaseInfo->vendor->name }}</div>
+                                <div class="col-6 mt-1"><strong>Grand Total:</strong> Rp {{ number_format($purchaseInfo->grand_total, 0, ',', '.') }}</div>
+                                <div class="col-6 mt-1"><strong>Sudah Dibayar:</strong> Rp {{ number_format($purchaseInfo->paid_amount, 0, ',', '.') }}</div>
                                 <div class="col-12 mt-1">
                                     <strong>Sisa Hutang:</strong>
-                                    <span class="text-danger fw-bold">Rp {{ number_format($purchase->remaining_amount, 0, ',', '.') }}</span>
+                                    <span class="text-danger fw-bold">Rp {{ number_format($purchaseInfo->remaining_amount, 0, ',', '.') }}</span>
                                 </div>
                             </div>
                         </div>
@@ -32,11 +32,11 @@
                             <div class="input-group">
                                 <span class="input-group-text">Rp</span>
                                 <input type="number" class="form-control @error('amount') is-invalid @enderror"
-                                    wire:model="amount" min="1" max="{{ $purchase?->remaining_amount ?? 0 }}">
+                                    wire:model="amount" min="1" max="{{ $purchaseInfo?->remaining_amount ?? 0 }}">
                             </div>
                             @error('amount') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                            @if($purchase)
-                            <small class="text-muted">Maks: Rp {{ number_format($purchase->remaining_amount, 0, ',', '.') }}</small>
+                            @if($purchaseInfo)
+                            <small class="text-muted">Maks: Rp {{ number_format($purchaseInfo->remaining_amount, 0, ',', '.') }}</small>
                             @endif
                         </div>
 
@@ -49,13 +49,30 @@
 
                         <div class="mb-3">
                             <label class="form-label">Metode Pembayaran <span class="text-danger">*</span></label>
-                            <select class="form-select @error('payment_method') is-invalid @enderror" wire:model="payment_method">
-                                <option value="cash">Tunai</option>
-                                <option value="bank_transfer">Transfer Bank</option>
-                                <option value="giro">Giro</option>
-                                <option value="other">Lainnya</option>
+                            <select class="form-select @error('payment_method') is-invalid @enderror" wire:model.live="payment_method">
+                                @foreach($methods as $val => $label)
+                                <option value="{{ $val }}">{{ $label }}</option>
+                                @endforeach
                             </select>
                             @error('payment_method') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Sumber Pembayaran <span class="text-danger">*</span></label>
+                            <select class="form-select @error('payment_source') is-invalid @enderror" wire:model="payment_source">
+                                <option value="kas_utama">Kas Utama</option>
+                                <option value="kas_kecil">Kas Kecil</option>
+                                <option value="bank_utama">Bank Utama</option>
+                            </select>
+                            @error('payment_source') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <small class="text-muted">Akun yang akan digunakan di jurnal.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">No. Referensi</label>
+                            <input type="text" class="form-control @error('reference_no') is-invalid @enderror"
+                                wire:model="reference_no" placeholder="No. transfer / giro (opsional)">
+                            @error('reference_no') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="mb-3">

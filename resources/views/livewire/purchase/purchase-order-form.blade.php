@@ -1,7 +1,7 @@
 <div>
     @if($showModal)
-    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5); overflow-y: auto;">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable" style="margin: 1.75rem auto;">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-primary text-white py-2">
                     <h6 class="modal-title">

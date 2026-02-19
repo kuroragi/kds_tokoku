@@ -75,6 +75,7 @@
                         </th>
                         <th width="14%">Vendor</th>
                         <th width="8%">Tipe</th>
+                        <th width="7%">Jenis</th>
                         <th width="12%" class="text-end">Grand Total</th>
                         <th width="10%" class="text-end">Dibayar</th>
                         <th width="10%" class="text-end">Sisa</th>
@@ -85,7 +86,7 @@
                 <tbody>
                     @forelse($purchases as $idx => $purchase)
                     <tr wire:key="purchase-{{ $purchase->id }}">
-                        <td class="ps-3 text-muted">{{ $idx + 1 }}</td>
+                        <td class="ps-3 text-muted">{{ $purchases->firstItem() + $idx }}</td>
                         <td>
                             <span class="fw-semibold">{{ $purchase->invoice_number }}</span>
                             @if($purchase->purchase_order_id)
@@ -97,6 +98,14 @@
                         <td>
                             <span class="badge bg-{{ $purchase->isDirect() ? 'info' : 'primary' }} bg-opacity-75">
                                 {{ $purchase->getTypeLabel() }}
+                            </span>
+                        </td>
+                        <td>
+                            @php
+                                $typeColors = ['goods' => 'secondary', 'saldo' => 'info', 'service' => 'warning', 'mix' => 'dark'];
+                            @endphp
+                            <span class="badge bg-{{ $typeColors[$purchase->purchase_type ?? 'goods'] ?? 'secondary' }} bg-opacity-75">
+                                {{ $purchase->getPurchaseTypeLabel() }}
                             </span>
                         </td>
                         <td class="text-end fw-semibold">Rp {{ number_format($purchase->grand_total, 0, ',', '.') }}</td>
@@ -145,5 +154,10 @@
                 </tbody>
             </table>
         </div>
+        @if($purchases->hasPages())
+        <div class="card-footer bg-white border-0 py-2">
+            {{ $purchases->links() }}
+        </div>
+        @endif
     </div>
 </div>

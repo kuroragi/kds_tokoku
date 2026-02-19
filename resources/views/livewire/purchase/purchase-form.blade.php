@@ -1,7 +1,7 @@
 <div>
     @if($showModal)
-    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5); overflow-y: auto;">
+        <div class="modal-dialog modal-xl" style="margin: 1.75rem auto;">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-success text-white py-2">
                     <h6 class="modal-title">
@@ -43,7 +43,7 @@
                             </div>
                             @endif
 
-                            <div class="col-md-{{ $purchaseMode === 'from_po' ? '4' : '4' }}">
+                            <div class="col-md-{{ $purchaseMode === 'from_po' ? '4' : '3' }}">
                                 <label class="form-label">Unit Usaha <span class="text-danger">*</span></label>
                                 @if($isSuperAdmin && $purchaseMode === 'direct')
                                 <select class="form-select @error('business_unit_id') is-invalid @enderror" wire:model.live="business_unit_id">
@@ -59,7 +59,7 @@
                             </div>
 
                             @if($purchaseMode === 'direct')
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label">Vendor <span class="text-danger">*</span></label>
                                 <select class="form-select @error('vendor_id') is-invalid @enderror" wire:model="vendor_id">
                                     <option value="">-- Pilih Vendor --</option>
@@ -68,6 +68,15 @@
                                     @endforeach
                                 </select>
                                 @error('vendor_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Jenis Pembelian <span class="text-danger">*</span></label>
+                                <select class="form-select @error('purchase_type') is-invalid @enderror" wire:model.live="purchase_type">
+                                    @foreach($purchaseTypes as $val => $label)
+                                    <option value="{{ $val }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                @error('purchase_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                             @else
                             <div class="col-md-4">
@@ -96,37 +105,82 @@
                             <table class="table table-bordered table-sm align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th width="5%">#</th>
-                                        <th width="30%">Barang <span class="text-danger">*</span></th>
-                                        <th width="12%">Qty <span class="text-danger">*</span></th>
-                                        <th width="18%">Harga Satuan</th>
-                                        <th width="15%">Diskon</th>
-                                        <th width="15%" class="text-end">Subtotal</th>
-                                        <th width="5%"></th>
+                                        <th width="4%">#</th>
+                                        @if($purchase_type === 'mix')
+                                        <th width="10%">Jenis</th>
+                                        @endif
+                                        <th width="{{ $purchase_type === 'mix' ? '25%' : '30%' }}">
+                                            @if($purchase_type === 'goods') Barang
+                                            @elseif($purchase_type === 'saldo') Provider Saldo
+                                            @elseif($purchase_type === 'service') Deskripsi Jasa
+                                            @else Item
+                                            @endif
+                                            <span class="text-danger">*</span>
+                                        </th>
+                                        <th width="10%">Qty <span class="text-danger">*</span></th>
+                                        <th width="15%">Harga Satuan</th>
+                                        <th width="12%">Diskon</th>
+                                        <th width="14%" class="text-end">Subtotal</th>
+                                        <th width="4%"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($items as $idx => $item)
+                                    @php $currentItemType = $item['item_type'] ?? 'goods'; @endphp
                                     <tr wire:key="item-{{ $idx }}">
                                         <td class="text-center text-muted">{{ $idx + 1 }}</td>
+
+                                        {{-- Item Type selector (only for mix) --}}
+                                        @if($purchase_type === 'mix')
                                         <td>
+                                            <select class="form-select form-select-sm" wire:model.live="items.{{ $idx }}.item_type">
+                                                @foreach($itemTypes as $typeVal => $typeLabel)
+                                                <option value="{{ $typeVal }}">{{ $typeLabel }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        @endif
+
+                                        {{-- Item Reference (varies by item_type) --}}
+                                        <td>
+                                            @if($currentItemType === 'goods')
                                             <select class="form-select form-select-sm @error('items.'.$idx.'.stock_id') is-invalid @enderror"
                                                 wire:model.live="items.{{ $idx }}.stock_id">
-                                                <option value="">-- Pilih --</option>
+                                                <option value="">-- Pilih Barang --</option>
                                                 @foreach($availableStocks as $stock)
                                                 <option value="{{ $stock->id }}">{{ $stock->code }} - {{ $stock->name }}</option>
                                                 @endforeach
                                             </select>
+                                            @error('items.'.$idx.'.stock_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                            @elseif($currentItemType === 'saldo')
+                                            <select class="form-select form-select-sm @error('items.'.$idx.'.saldo_provider_id') is-invalid @enderror"
+                                                wire:model.live="items.{{ $idx }}.saldo_provider_id">
+                                                <option value="">-- Pilih Provider --</option>
+                                                @foreach($availableSaldoProviders as $provider)
+                                                <option value="{{ $provider->id }}">{{ $provider->code }} - {{ $provider->name }}</option>
+                                                @endforeach
+                                            </select>
+                                            @error('items.'.$idx.'.saldo_provider_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                            <input type="text" class="form-control form-control-sm mt-1 @error('items.'.$idx.'.description') is-invalid @enderror"
+                                                wire:model="items.{{ $idx }}.description" placeholder="Keterangan saldo...">
+                                            @error('items.'.$idx.'.description') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                            @elseif($currentItemType === 'service')
+                                            <input type="text" class="form-control form-control-sm @error('items.'.$idx.'.description') is-invalid @enderror"
+                                                wire:model="items.{{ $idx }}.description" placeholder="Deskripsi jasa...">
+                                            @error('items.'.$idx.'.description') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                            @endif
                                         </td>
+
                                         <td>
                                             <input type="number" step="0.01" min="0.01"
-                                                class="form-control form-control-sm"
+                                                class="form-control form-control-sm @error('items.'.$idx.'.quantity') is-invalid @enderror"
                                                 wire:model.live="items.{{ $idx }}.quantity">
                                         </td>
                                         <td>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text">Rp</span>
-                                                <input type="number" class="form-control" wire:model.live="items.{{ $idx }}.unit_price">
+                                                <input type="number" class="form-control @error('items.'.$idx.'.unit_price') is-invalid @enderror"
+                                                    wire:model.live="items.{{ $idx }}.unit_price">
                                             </div>
                                         </td>
                                         <td>
@@ -210,6 +264,18 @@
                                     </select>
                                     @error('payment_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
+
+                                @if($payment_type !== 'credit')
+                                <div class="mb-3">
+                                    <label class="form-label">Sumber Pembayaran <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('payment_source') is-invalid @enderror" wire:model="payment_source">
+                                        <option value="kas_utama">Kas Utama</option>
+                                        <option value="kas_kecil">Kas Kecil</option>
+                                        <option value="bank_utama">Bank Utama</option>
+                                    </select>
+                                    @error('payment_source') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                @endif
 
                                 @if($payment_type === 'partial')
                                 <div class="mb-3">

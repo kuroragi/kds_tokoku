@@ -69,7 +69,7 @@
                 <tbody>
                     @forelse($purchaseOrders as $idx => $po)
                     <tr wire:key="po-{{ $po->id }}">
-                        <td class="ps-3 text-muted">{{ $idx + 1 }}</td>
+                        <td class="ps-3 text-muted">{{ $purchaseOrders->firstItem() + $idx }}</td>
                         <td class="fw-semibold">{{ $po->po_number }}</td>
                         <td>{{ $po->po_date->format('d/m/Y') }}</td>
                         <td>{{ $po->vendor->name }}</td>
@@ -116,5 +116,10 @@
                 </tbody>
             </table>
         </div>
+        @if($purchaseOrders->hasPages())
+        <div class="card-footer bg-white border-0 py-2">
+            {{ $purchaseOrders->links() }}
+        </div>
+        @endif
     </div>
 </div>

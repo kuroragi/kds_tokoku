@@ -5,6 +5,7 @@ namespace App\Livewire\Purchase;
 use App\Models\Purchase;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
+use App\Models\SaldoProvider;
 use App\Models\Stock;
 use App\Models\Vendor;
 use App\Services\BusinessUnitService;
@@ -22,6 +23,7 @@ class PurchaseForm extends Component
     // Header fields
     public $business_unit_id = '';
     public $vendor_id = '';
+    public $purchase_type = 'goods'; // goods, saldo, service, mix
     public $purchase_date = '';
     public $due_date = '';
     public $notes = '';
@@ -30,6 +32,7 @@ class PurchaseForm extends Component
 
     // Payment
     public $payment_type = 'cash';
+    public $payment_source = 'kas_utama'; // kas_utama, kas_kecil, bank_utama
     public $paid_amount = 0;
     public $down_payment_amount = 0;
 
@@ -108,8 +111,15 @@ class PurchaseForm extends Component
 
     public function addItem()
     {
+        $defaultType = in_array($this->purchase_type, ['goods', 'saldo', 'service'])
+            ? $this->purchase_type
+            : 'goods';
+
         $this->items[] = [
+            'item_type' => $defaultType,
             'stock_id' => '',
+            'saldo_provider_id' => '',
+            'description' => '',
             'quantity' => 1,
             'unit_price' => 0,
             'discount' => 0,
@@ -128,10 +138,38 @@ class PurchaseForm extends Component
     public function updatedItems($value, $key)
     {
         $parts = explode('.', $key);
-        if (count($parts) === 2 && $parts[1] === 'stock_id' && $value) {
-            $stock = Stock::find($value);
-            if ($stock) {
-                $this->items[$parts[0]]['unit_price'] = (float) $stock->buy_price;
+        if (count($parts) === 2) {
+            $idx = $parts[0];
+            $field = $parts[1];
+
+            if ($field === 'stock_id' && $value) {
+                $stock = Stock::find($value);
+                if ($stock) {
+                    $this->items[$idx]['unit_price'] = (float) $stock->buy_price;
+                }
+            }
+
+            // When item_type changes, reset related fields
+            if ($field === 'item_type') {
+                $this->items[$idx]['stock_id'] = '';
+                $this->items[$idx]['saldo_provider_id'] = '';
+                $this->items[$idx]['description'] = '';
+                $this->items[$idx]['unit_price'] = 0;
+            }
+        }
+    }
+
+    public function updatedPurchaseType($value)
+    {
+        // When purchase_type changes, update all existing items' item_type
+        // (only if not mix — mix allows per-item selection)
+        if (in_array($value, ['goods', 'saldo', 'service'])) {
+            foreach ($this->items as $idx => $item) {
+                $this->items[$idx]['item_type'] = $value;
+                $this->items[$idx]['stock_id'] = '';
+                $this->items[$idx]['saldo_provider_id'] = '';
+                $this->items[$idx]['description'] = '';
+                $this->items[$idx]['unit_price'] = 0;
             }
         }
     }
@@ -148,12 +186,14 @@ class PurchaseForm extends Component
         $this->purchase_order_id = '';
         $this->business_unit_id = '';
         $this->vendor_id = '';
+        $this->purchase_type = 'goods';
         $this->purchase_date = '';
         $this->due_date = '';
         $this->notes = '';
         $this->discount = 0;
         $this->tax = 0;
         $this->payment_type = 'cash';
+        $this->payment_source = 'kas_utama';
         $this->paid_amount = 0;
         $this->down_payment_amount = 0;
         $this->items = [];
@@ -166,12 +206,14 @@ class PurchaseForm extends Component
         $rules = [
             'business_unit_id' => 'required|exists:business_units,id',
             'vendor_id' => 'required|exists:vendors,id',
+            'purchase_type' => 'required|in:goods,saldo,service,mix',
             'purchase_date' => 'required|date',
             'due_date' => 'nullable|date|after_or_equal:purchase_date',
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:1000',
             'payment_type' => 'required|in:cash,credit,partial,down_payment',
+            'payment_source' => 'required_unless:payment_type,credit|in:kas_utama,kas_kecil,bank_utama',
         ];
 
         if ($this->payment_type === 'partial') {
@@ -184,9 +226,22 @@ class PurchaseForm extends Component
 
         if ($this->purchaseMode === 'direct') {
             $rules['items'] = 'required|array|min:1';
-            $rules['items.*.stock_id'] = 'required|exists:stocks,id';
+            $rules['items.*.item_type'] = 'required|in:goods,saldo,service';
             $rules['items.*.quantity'] = 'required|numeric|min:0.01';
             $rules['items.*.unit_price'] = 'required|numeric|min:0';
+
+            // Conditional validation per item type
+            foreach ($this->items as $idx => $item) {
+                $itemType = $item['item_type'] ?? 'goods';
+                if ($itemType === 'goods') {
+                    $rules["items.{$idx}.stock_id"] = 'required|exists:stocks,id';
+                } elseif ($itemType === 'saldo') {
+                    $rules["items.{$idx}.saldo_provider_id"] = 'required|exists:saldo_providers,id';
+                    $rules["items.{$idx}.description"] = 'required|string|max:255';
+                } elseif ($itemType === 'service') {
+                    $rules["items.{$idx}.description"] = 'required|string|max:255';
+                }
+            }
         } else {
             $rules['purchase_order_id'] = 'required|exists:purchase_orders,id';
             $rules['poItems'] = 'required|array|min:1';
@@ -200,14 +255,20 @@ class PurchaseForm extends Component
         'business_unit_id.required' => 'Unit usaha wajib dipilih.',
         'vendor_id.required' => 'Vendor wajib dipilih.',
         'purchase_date.required' => 'Tanggal pembelian wajib diisi.',
+        'purchase_type.required' => 'Jenis pembelian wajib dipilih.',
         'payment_type.required' => 'Tipe pembayaran wajib dipilih.',
+        'payment_source.required_unless' => 'Sumber pembayaran wajib dipilih.',
+        'payment_source.in' => 'Sumber pembayaran tidak valid.',
         'paid_amount.required' => 'Jumlah bayar wajib diisi untuk pembayaran sebagian.',
         'paid_amount.min' => 'Jumlah bayar minimal 1.',
         'down_payment_amount.required' => 'Jumlah DP wajib diisi.',
         'down_payment_amount.min' => 'Jumlah DP minimal 1.',
         'items.required' => 'Minimal 1 item harus diisi.',
         'items.*.stock_id.required' => 'Barang wajib dipilih.',
+        'items.*.saldo_provider_id.required' => 'Provider saldo wajib dipilih.',
+        'items.*.description.required' => 'Deskripsi wajib diisi.',
         'items.*.quantity.required' => 'Kuantitas wajib diisi.',
+        'items.*.item_type.required' => 'Jenis item wajib dipilih.',
         'purchase_order_id.required' => 'Purchase Order wajib dipilih.',
     ];
 
@@ -221,12 +282,14 @@ class PurchaseForm extends Component
         $data = [
             'business_unit_id' => $this->business_unit_id,
             'vendor_id' => $this->vendor_id,
+            'purchase_type' => $this->purchase_type,
             'purchase_date' => $this->purchase_date,
             'due_date' => $this->due_date ?: null,
             'notes' => $this->notes ?: null,
             'discount' => $this->discount ?: 0,
             'tax' => $this->tax ?: 0,
             'payment_type' => $this->payment_type,
+            'payment_source' => $this->payment_type !== 'credit' ? $this->payment_source : null,
             'paid_amount' => $this->paid_amount ?: 0,
             'down_payment_amount' => $this->down_payment_amount ?: 0,
         ];
@@ -304,6 +367,15 @@ class PurchaseForm extends Component
         return $query->orderBy('name')->get();
     }
 
+    public function getAvailableSaldoProvidersProperty()
+    {
+        $query = SaldoProvider::active();
+        if ($this->business_unit_id) {
+            $query->byBusinessUnit($this->business_unit_id);
+        }
+        return $query->orderBy('name')->get();
+    }
+
     public function getAvailablePOsProperty()
     {
         $query = PurchaseOrder::receivable();
@@ -319,7 +391,10 @@ class PurchaseForm extends Component
             'units' => $this->units,
             'availableVendors' => $this->availableVendors,
             'availableStocks' => $this->availableStocks,
+            'availableSaldoProviders' => $this->availableSaldoProviders,
             'availablePOs' => $this->availablePOs,
+            'purchaseTypes' => Purchase::PURCHASE_TYPES,
+            'itemTypes' => \App\Models\PurchaseItem::ITEM_TYPES,
             'subtotal' => $this->subtotal,
             'grandTotal' => $this->grandTotal,
             'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),

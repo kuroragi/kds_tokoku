@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Models\Period;
+use App\Models\BusinessUnit;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchasePayment;
+use App\Models\SaldoProvider;
 use App\Models\Stock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -167,6 +169,7 @@ class PurchaseService
                 $data['grand_total'] = $subtotal - ($data['discount'] ?? 0) + ($data['tax'] ?? 0);
                 $data['invoice_number'] = $data['invoice_number'] ?? $this->generateInvoiceNumber();
                 $data['status'] = $data['status'] ?? 'confirmed';
+                $data['purchase_type'] = $data['purchase_type'] ?? 'goods';
 
                 // Calculate payment
                 $this->calculatePaymentAmounts($data);
@@ -175,31 +178,34 @@ class PurchaseService
 
                 foreach ($items as $item) {
                     $item['purchase_id'] = $purchase->id;
+                    $item['item_type'] = $item['item_type'] ?? 'goods';
                     PurchaseItem::create($item);
                 }
 
-                // Increase stock
-                $this->increaseStock($items);
+                // Process inventory changes per item type
+                $this->processInventoryChanges($items);
 
-                // Create journal
-                $this->createPurchaseJournalEntry($purchase);
+                // Create journal (with payment source info)
+                $this->createPurchaseJournalEntry($purchase, $data);
+
+                $paymentSource = $data['payment_source'] ?? 'kas_utama';
 
                 // If cash payment, record payment immediately
                 if ($data['payment_type'] === 'cash') {
-                    $this->recordInitialCashPayment($purchase);
+                    $this->recordInitialCashPayment($purchase, $paymentSource);
                 }
 
                 // If partial payment, record the partial payment
                 if ($data['payment_type'] === 'partial' && ($data['paid_amount'] ?? 0) > 0) {
-                    $this->recordInitialPartialPayment($purchase, (float) $data['paid_amount']);
+                    $this->recordInitialPartialPayment($purchase, (float) $data['paid_amount'], $paymentSource);
                 }
 
                 // If down payment, the DP was already recorded; remaining is credit
                 if ($data['payment_type'] === 'down_payment' && ($data['down_payment_amount'] ?? 0) > 0) {
-                    $this->recordDownPayment($purchase, (float) $data['down_payment_amount']);
+                    $this->recordDownPayment($purchase, (float) $data['down_payment_amount'], $paymentSource);
                 }
 
-                return $purchase->fresh(['items.stock', 'vendor', 'businessUnit', 'payments']);
+                return $purchase->fresh(['items.stock', 'items.saldoProvider', 'vendor', 'businessUnit', 'payments']);
             });
         } catch (Throwable $e) {
             throw ValidationException::withMessages([
@@ -226,6 +232,7 @@ class PurchaseService
                 $data['vendor_id'] = $po->vendor_id;
                 $data['invoice_number'] = $data['invoice_number'] ?? $this->generateInvoiceNumber();
                 $data['status'] = 'confirmed';
+                $data['purchase_type'] = 'goods'; // PO-based purchases are always goods
 
                 $subtotal = 0;
                 $purchaseItems = [];
@@ -267,25 +274,28 @@ class PurchaseService
 
                 foreach ($purchaseItems as $item) {
                     $item['purchase_id'] = $purchase->id;
+                    $item['item_type'] = 'goods'; // PO items are always goods
                     PurchaseItem::create($item);
                 }
 
-                // Increase stock
-                $this->increaseStock($purchaseItems);
+                // Process inventory changes
+                $this->processInventoryChanges($purchaseItems);
 
                 // Update PO status
                 $this->updatePOStatus($po);
 
-                // Create journal
-                $this->createPurchaseJournalEntry($purchase);
+                // Create journal (with payment source info)
+                $this->createPurchaseJournalEntry($purchase, $data);
+
+                $paymentSource = $data['payment_source'] ?? 'kas_utama';
 
                 // Handle payment recording
                 if ($data['payment_type'] === 'cash') {
-                    $this->recordInitialCashPayment($purchase);
+                    $this->recordInitialCashPayment($purchase, $paymentSource);
                 } elseif ($data['payment_type'] === 'partial' && ($data['paid_amount'] ?? 0) > 0) {
-                    $this->recordInitialPartialPayment($purchase, (float) $data['paid_amount']);
+                    $this->recordInitialPartialPayment($purchase, (float) $data['paid_amount'], $paymentSource);
                 } elseif ($data['payment_type'] === 'down_payment' && ($data['down_payment_amount'] ?? 0) > 0) {
-                    $this->recordDownPayment($purchase, (float) $data['down_payment_amount']);
+                    $this->recordDownPayment($purchase, (float) $data['down_payment_amount'], $paymentSource);
                 }
 
                 return $purchase->fresh(['items.stock', 'vendor', 'businessUnit', 'purchaseOrder', 'payments']);
@@ -380,12 +390,21 @@ class PurchaseService
 
         try {
             return DB::transaction(function () use ($purchase) {
-                // Reverse stock
+                // Reverse inventory changes per item type
                 foreach ($purchase->items as $item) {
-                    $stock = Stock::find($item->stock_id);
-                    if ($stock) {
-                        $stock->decrement('current_stock', $item->quantity);
+                    $itemType = $item->item_type ?? 'goods';
+                    if ($itemType === 'goods' && $item->stock_id) {
+                        $stock = Stock::find($item->stock_id);
+                        if ($stock) {
+                            $stock->decrement('current_stock', $item->quantity);
+                        }
+                    } elseif ($itemType === 'saldo' && $item->saldo_provider_id) {
+                        $provider = SaldoProvider::find($item->saldo_provider_id);
+                        if ($provider) {
+                            $provider->decrement('current_balance', $item->subtotal);
+                        }
                     }
+                    // service items: no inventory to reverse
                 }
 
                 // If from PO, reverse received quantities
@@ -479,15 +498,28 @@ class PurchaseService
     }
 
     /**
-     * Increase stock quantities for purchased items.
+     * Process inventory changes based on item type.
+     * - goods: increase stock quantity
+     * - saldo: increase saldo provider balance
+     * - service: no inventory change (expense only)
      */
-    private function increaseStock(array $items): void
+    private function processInventoryChanges(array $items): void
     {
         foreach ($items as $item) {
-            $stock = Stock::find($item['stock_id']);
-            if ($stock) {
-                $stock->increment('current_stock', $item['quantity']);
+            $itemType = $item['item_type'] ?? 'goods';
+
+            if ($itemType === 'goods' && !empty($item['stock_id'])) {
+                $stock = Stock::find($item['stock_id']);
+                if ($stock) {
+                    $stock->increment('current_stock', $item['quantity']);
+                }
+            } elseif ($itemType === 'saldo' && !empty($item['saldo_provider_id'])) {
+                $provider = SaldoProvider::find($item['saldo_provider_id']);
+                if ($provider) {
+                    $provider->increment('current_balance', $item['subtotal']);
+                }
             }
+            // service: no inventory change, purely expense
         }
     }
 
@@ -511,20 +543,31 @@ class PurchaseService
     /**
      * Create journal entry for a purchase.
      *
-     * Debit: Persediaan Barang / Pembelian
-     * Credit: Kas (if cash) / Hutang Dagang (if credit/partial/dp)
+     * Debit accounts resolved from BusinessUnit COA mappings:
+     * - goods: persediaan_barang
+     * - saldo: persediaan_barang (fallback if persediaan_saldo not configured)
+     * - service: beban_lain
+     *
+     * Credit: payment_source COA (kas_utama/kas_kecil/bank_utama) or hutang_usaha
      */
-    private function createPurchaseJournalEntry(Purchase $purchase): void
+    private function createPurchaseJournalEntry(Purchase $purchase, array $data = []): void
     {
         $period = Period::current()->open()->first();
         if (!$period) {
             return; // Skip journal if no open period
         }
 
+        $businessUnit = $purchase->businessUnit;
+        if (!$businessUnit) {
+            logger()->warning('Purchase journal skipped: no business unit for purchase #' . $purchase->id);
+            return;
+        }
+
         $entries = [];
         $grandTotal = (float) $purchase->grand_total;
         $paidAmount = 0;
         $creditAmount = $grandTotal;
+        $paymentSource = $data['payment_source'] ?? $purchase->payment_source ?? 'kas_utama';
 
         // Determine initial payment
         if ($purchase->payment_type === 'cash') {
@@ -538,32 +581,101 @@ class PurchaseService
             $creditAmount = $grandTotal - $paidAmount;
         }
 
-        // Debit: Persediaan / Pembelian
-        $entries[] = [
-            'coa_code' => '1301', // Persediaan Barang
-            'description' => 'Pembelian - ' . $purchase->vendor->name,
-            'debit' => $grandTotal,
-            'credit' => 0,
-        ];
+        // Debit entries grouped by item type
+        $purchase->load('items');
+        $goodsTotal = 0;
+        $saldoTotal = 0;
+        $serviceTotal = 0;
 
-        // Credit: Kas (paid portion)
-        if ($paidAmount > 0) {
-            $entries[] = [
-                'coa_code' => '1101', // Kas
-                'description' => 'Pembayaran Tunai - ' . $purchase->invoice_number,
-                'debit' => 0,
-                'credit' => $paidAmount,
-            ];
+        foreach ($purchase->items as $item) {
+            $itemType = $item->item_type ?? 'goods';
+            $amount = (float) $item->subtotal;
+
+            match ($itemType) {
+                'saldo' => $saldoTotal += $amount,
+                'service' => $serviceTotal += $amount,
+                default => $goodsTotal += $amount,
+            };
         }
 
-        // Credit: Hutang Dagang (unpaid portion)
+        // Apply header-level discount/tax proportionally
+        $subtotal = (float) $purchase->subtotal;
+        $ratio = $subtotal > 0 ? $grandTotal / $subtotal : 1;
+
+        // Resolve COA codes from BusinessUnit mappings
+        if ($goodsTotal > 0) {
+            $coaCode = $this->resolveCoaCode($businessUnit, 'persediaan_barang');
+            if ($coaCode) {
+                $entries[] = [
+                    'coa_code' => $coaCode,
+                    'description' => 'Pembelian Barang - ' . $purchase->vendor->name,
+                    'debit' => round($goodsTotal * $ratio, 2),
+                    'credit' => 0,
+                ];
+            }
+        }
+
+        if ($saldoTotal > 0) {
+            // Try persediaan_saldo first, fallback to persediaan_barang
+            $coaCode = $this->resolveCoaCode($businessUnit, 'persediaan_saldo')
+                     ?? $this->resolveCoaCode($businessUnit, 'persediaan_barang');
+            if ($coaCode) {
+                $entries[] = [
+                    'coa_code' => $coaCode,
+                    'description' => 'Pembelian Saldo - ' . $purchase->vendor->name,
+                    'debit' => round($saldoTotal * $ratio, 2),
+                    'credit' => 0,
+                ];
+            }
+        }
+
+        if ($serviceTotal > 0) {
+            $coaCode = $this->resolveCoaCode($businessUnit, 'beban_lain');
+            if ($coaCode) {
+                $entries[] = [
+                    'coa_code' => $coaCode,
+                    'description' => 'Pembelian Jasa - ' . $purchase->vendor->name,
+                    'debit' => round($serviceTotal * $ratio, 2),
+                    'credit' => 0,
+                ];
+            }
+        }
+
+        // Fallback if no entries created (shouldn't happen if COA mappings exist)
+        if (empty($entries)) {
+            logger()->warning('Purchase journal skipped: no COA mappings found for business unit #' . $businessUnit->id);
+            return;
+        }
+
+        // Credit: payment source COA (paid portion)
+        if ($paidAmount > 0) {
+            $paymentCoaCode = $this->resolveCoaCode($businessUnit, $paymentSource);
+            if ($paymentCoaCode) {
+                $paymentLabel = match ($paymentSource) {
+                    'kas_kecil' => 'Pembayaran dari Kas Kecil',
+                    'bank_utama' => 'Pembayaran via Bank',
+                    default => 'Pembayaran Tunai',
+                };
+                $entries[] = [
+                    'coa_code' => $paymentCoaCode,
+                    'description' => $paymentLabel . ' - ' . $purchase->invoice_number,
+                    'debit' => 0,
+                    'credit' => $paidAmount,
+                ];
+            }
+        }
+
+        // Credit: Hutang Usaha (unpaid portion)
         if ($creditAmount > 0) {
-            $entries[] = [
-                'coa_code' => '2101', // Hutang Dagang
-                'description' => 'Hutang Pembelian - ' . $purchase->vendor->name,
-                'debit' => 0,
-                'credit' => $creditAmount,
-            ];
+            $hutangCoaCode = $this->resolveCoaCode($businessUnit, 'hutang_usaha');
+            if ($hutangCoaCode) {
+                $entries[] = [
+                    'coa_code' => $hutangCoaCode,
+                    'description' => 'Hutang Pembelian - ' . $purchase->vendor->name,
+                    'debit' => 0,
+                    'credit' => $creditAmount,
+                ];
+            }
         }
 
         try {
@@ -586,8 +698,8 @@ class PurchaseService
 
     /**
      * Create journal for a payment.
-     * Debit: Hutang Dagang
-     * Credit: Kas
+     * Debit: Hutang Usaha (from BU COA mapping)
+     * Credit: Payment source COA (kas_utama/kas_kecil/bank_utama from BU COA mapping)
      */
     private function createPaymentJournalEntry(Purchase $purchase, PurchasePayment $payment)
     {
@@ -595,6 +707,27 @@ class PurchaseService
         if (!$period) {
             return null;
         }
+
+        $businessUnit = $purchase->businessUnit;
+        if (!$businessUnit) {
+            logger()->warning('Payment journal skipped: no business unit for purchase #' . $purchase->id);
+            return null;
+        }
+
+        $paymentSource = $payment->payment_source ?? 'kas_utama';
+        $hutangCoaCode = $this->resolveCoaCode($businessUnit, 'hutang_usaha');
+        $paymentCoaCode = $this->resolveCoaCode($businessUnit, $paymentSource);
+
+        if (!$hutangCoaCode || !$paymentCoaCode) {
+            logger()->warning('Payment journal skipped: missing COA mapping (hutang_usaha or ' . $paymentSource . ') for BU #' . $businessUnit->id);
+            return null;
+        }
+
+        $paymentLabel = match ($paymentSource) {
+            'kas_kecil' => 'Pembayaran dari Kas Kecil',
+            'bank_utama' => 'Pembayaran via Bank',
+            default => 'Pembayaran Tunai',
+        };
 
         try {
             return $this->journalService->createJournalEntry([
@@ -606,14 +739,14 @@ class PurchaseService
                 'status' => 'posted',
                 'entries' => [
                     [
-                        'coa_code' => '2101', // Hutang Dagang
+                        'coa_code' => $hutangCoaCode,
                         'description' => 'Pelunasan Hutang - ' . $purchase->vendor->name,
                         'debit' => (float) $payment->amount,
                         'credit' => 0,
                     ],
                     [
-                        'coa_code' => '1101', // Kas
-                        'description' => 'Pembayaran - ' . $purchase->invoice_number,
+                        'coa_code' => $paymentCoaCode,
+                        'description' => $paymentLabel . ' - ' . $purchase->invoice_number,
                         'debit' => 0,
                         'credit' => (float) $payment->amount,
                     ],
@@ -626,15 +759,27 @@ class PurchaseService
     }
 
     /**
+     * Resolve COA code from BusinessUnit COA mapping.
+     */
+    private function resolveCoaCode(BusinessUnit $businessUnit, string $accountKey): ?string
+    {
+        $coa = $businessUnit->getCoaByKey($accountKey);
+        return $coa?->code;
+    }
+
+    /**
      * Record immediate cash payment.
      */
-    private function recordInitialCashPayment(Purchase $purchase): void
+    private function recordInitialCashPayment(Purchase $purchase, string $paymentSource = 'kas_utama'): void
     {
+        $method = in_array($paymentSource, ['bank_utama']) ? 'bank_transfer' : 'cash';
+
         PurchasePayment::create([
             'purchase_id' => $purchase->id,
             'amount' => $purchase->grand_total,
             'payment_date' => $purchase->purchase_date,
-            'payment_method' => 'cash',
+            'payment_method' => $method,
+            'payment_source' => $paymentSource,
             'notes' => 'Pembayaran tunai saat pembelian',
         ]);
     }
@@ -642,13 +787,16 @@ class PurchaseService
     /**
      * Record partial initial payment.
      */
-    private function recordInitialPartialPayment(Purchase $purchase, float $amount): void
+    private function recordInitialPartialPayment(Purchase $purchase, float $amount, string $paymentSource = 'kas_utama'): void
     {
+        $method = in_array($paymentSource, ['bank_utama']) ? 'bank_transfer' : 'cash';
+
         PurchasePayment::create([
             'purchase_id' => $purchase->id,
             'amount' => $amount,
             'payment_date' => $purchase->purchase_date,
-            'payment_method' => 'cash',
+            'payment_method' => $method,
+            'payment_source' => $paymentSource,
             'notes' => 'Pembayaran sebagian saat pembelian',
         ]);
     }
@@ -656,13 +804,16 @@ class PurchaseService
     /**
      * Record down payment.
      */
-    private function recordDownPayment(Purchase $purchase, float $amount): void
+    private function recordDownPayment(Purchase $purchase, float $amount, string $paymentSource = 'kas_utama'): void
     {
+        $method = in_array($paymentSource, ['bank_utama']) ? 'bank_transfer' : 'cash';
+
         PurchasePayment::create([
             'purchase_id' => $purchase->id,
             'amount' => $amount,
             'payment_date' => $purchase->purchase_date,
-            'payment_method' => 'cash',
+            'payment_method' => $method,
+            'payment_source' => $paymentSource,
             'notes' => 'Uang muka (DP) pembelian',
         ]);
     }

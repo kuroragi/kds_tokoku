@@ -608,37 +608,25 @@
                 </a>
                 <div class="collapse" id="sidebarPagesBank">
                     <ul class="side-nav-second-level">
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('bank-account.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('bank-account.index') }}"> --}}
-                                    <i class="bi bi-credit-card me-1"></i> Rekening Bank
-                                </a>
+                        <li class="{{ request()->routeIs('bank.index') ? 'active' : '' }}">
+                            <a href="{{ route('bank.index') }}">
+                                <i class="bi bi-bank me-1"></i> Daftar Bank
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('bank-account.index') ? 'active' : '' }}">
+                            <a href="{{ route('bank-account.index') }}">
+                                <i class="bi bi-credit-card me-1"></i> Rekening & Kas
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('fund-transfer.index') ? 'active' : '' }}">
+                            <a href="{{ route('fund-transfer.index') }}">
+                                <i class="bi bi-arrow-left-right me-1"></i> Transfer Dana
+                            </a>
                         </li>
                         <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('bank-transaction.index') ? 'active' : '' }}"> --}}
                             <a href="javascript:">
-                                {{-- <a href="{{ route('bank-transaction.index') }}"> --}}
-                                    <i class="bi bi-arrow-left-right me-1"></i> Transaksi Bank
-                                </a>
-                        </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('bank-fee-template.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('bank-fee-template.index') }}"> --}}
-                                    <i class="bi bi-receipt me-1"></i> Template Biaya
-                                </a>
-                        </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('bank-reconciliation.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('bank-reconciliation.index') }}"> --}}
-                                    <i class="bi bi-check2-square me-1"></i> Rekonsiliasi
-                                </a>
+                                <i class="bi bi-check2-square me-1"></i> Rekonsiliasi
+                            </a>
                         </li>
                     </ul>
                 </div>

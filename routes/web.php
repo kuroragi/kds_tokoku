@@ -9,6 +9,7 @@ use App\Http\Controllers\MasterController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\BankController;
 use App\Http\Controllers\SaldoController;
 use App\Livewire\Coa\CoaList;
 use App\Mail\SendMail;
@@ -141,6 +142,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('product', [SaldoController::class, 'productIndex'])->name('saldo-product.index');
         Route::get('topup', [SaldoController::class, 'topupIndex'])->name('saldo-topup.index');
         Route::get('transaction', [SaldoController::class, 'transactionIndex'])->name('saldo-transaction.index');
+    });
+
+    // Bank Management
+    Route::prefix('bank')->group(function () {
+        Route::get('/', [BankController::class, 'bankIndex'])->name('bank.index');
+        Route::get('account', [BankController::class, 'accountIndex'])->name('bank-account.index');
+        Route::get('transfer', [BankController::class, 'transferIndex'])->name('fund-transfer.index');
     });
 });
 

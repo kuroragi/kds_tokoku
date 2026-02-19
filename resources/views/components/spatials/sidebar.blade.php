@@ -290,50 +290,43 @@
                 <a data-bs-toggle="collapse" href="#sidebarPagesPurchase" aria-expanded="false"
                     aria-controls="sidebarPagesPurchase" class="side-nav-link">
                     <i class="bi bi-cart-plus"></i>
-                    <span> Purchase </span>
+                    <span> Pembelian </span>
                     <span class="menu-arrow"></span>
                 </a>
                 <div class="collapse" id="sidebarPagesPurchase">
                     <ul class="side-nav-second-level">
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('purchase-direct.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('purchase-direct.index') }}"> --}}
-                                    <i class="bi bi-cart-plus-fill me-1"></i> Pembelian Langsung
-                                </a>
+                        <li class="{{ request()->routeIs('purchase-order.*') ? 'active' : '' }}">
+                            <a href="{{ route('purchase-order.index') }}">
+                                <i class="bi bi-clipboard-plus me-1"></i> Purchase Order
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('purchase-order.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('purchase-order.index') }}"> --}}
-                                    <i class="bi bi-clipboard-plus me-1"></i> Purchase Order
-                                </a>
+                        <li class="{{ request()->routeIs('purchase.*') ? 'active' : '' }}">
+                            <a href="{{ route('purchase.index') }}">
+                                <i class="bi bi-cart-plus-fill me-1"></i> Pembelian
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('purchase-receive.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('purchase-receive.index') }}"> --}}
-                                    <i class="bi bi-box-arrow-in-down me-1"></i> Penerimaan Barang
-                                </a>
+                    </ul>
+                </div>
+            </li>
+
+            <li class="side-nav-item">
+                <a data-bs-toggle="collapse" href="#sidebarPagesOpname" aria-expanded="false"
+                    aria-controls="sidebarPagesOpname" class="side-nav-link">
+                    <i class="ri-clipboard-line"></i>
+                    <span> Opname </span>
+                    <span class="menu-arrow"></span>
+                </a>
+                <div class="collapse" id="sidebarPagesOpname">
+                    <ul class="side-nav-second-level">
+                        <li class="{{ request()->routeIs('stock-opname.*') ? 'active' : '' }}">
+                            <a href="{{ route('stock-opname.index') }}">
+                                <i class="ri-store-line me-1"></i> Stock Opname
+                            </a>
                         </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('purchase-invoice.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('purchase-invoice.index') }}"> --}}
-                                    <i class="bi bi-receipt me-1"></i> Purchase Invoice
-                                </a>
-                        </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('purchase-payment.index') ? 'active' : '' }}"> --}}
-                            <a href="javascript:">
-                                {{-- <a href="{{ route('purchase-payment.index') }}"> --}}
-                                    <i class="bi bi-credit-card me-1"></i> Purchase Payment
-                                </a>
+                        <li class="{{ request()->routeIs('saldo-opname.*') ? 'active' : '' }}">
+                            <a href="{{ route('saldo-opname.index') }}">
+                                <i class="ri-wallet-line me-1"></i> Saldo Opname
+                            </a>
                         </li>
                     </ul>
                 </div>

@@ -10,6 +10,8 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BankController;
+use App\Http\Controllers\OpnameController;
+use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SaldoController;
 use App\Livewire\Coa\CoaList;
 use App\Mail\SendMail;
@@ -149,6 +151,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [BankController::class, 'bankIndex'])->name('bank.index');
         Route::get('account', [BankController::class, 'accountIndex'])->name('bank-account.index');
         Route::get('transfer', [BankController::class, 'transferIndex'])->name('fund-transfer.index');
+    });
+
+    // Purchase Management
+    Route::prefix('purchase')->group(function () {
+        Route::get('order', [PurchaseController::class, 'purchaseOrderIndex'])->name('purchase-order.index');
+        Route::get('/', [PurchaseController::class, 'purchaseIndex'])->name('purchase.index');
+    });
+
+    // Opname (Stock & Saldo)
+    Route::prefix('opname')->group(function () {
+        Route::get('stock', [OpnameController::class, 'stockOpnameIndex'])->name('stock-opname.index');
+        Route::get('saldo', [OpnameController::class, 'saldoOpnameIndex'])->name('saldo-opname.index');
     });
 });
 

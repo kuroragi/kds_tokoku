@@ -1,7 +1,7 @@
 # KDS Tokoku — Roadmap & Ringkasan Sistem
 
 > Dokumen ini mencatat progres pengembangan, arsitektur modul yang telah dibangun, dan rencana ke depan.
-> Terakhir diperbarui: **18 Februari 2026**
+> Terakhir diperbarui: **19 Februari 2026**
 
 ---
 
@@ -226,7 +226,7 @@ Fondasi untuk mendukung usaha dengan banyak cabang/unit.
 
 ---
 
-## Phase 9 — Bank Management 🔜 (NEXT)
+## Phase 9 — Bank Management ✅
 
 > Modul untuk mengelola rekening bank, kas, dan perpindahan dana.
 
@@ -270,42 +270,79 @@ BCA → Kas:   amount=500.000,   fee=0      → BCA -500rb, Kas +500rb
 
 ---
 
-## Phase 10 — Purchase (Pembelian) 📋 Planned
+## Phase 10 — Purchase (Pembelian) & Opname ✅
 
-> Modul pengadaan barang, saldo, dan jasa dari vendor.
+> Modul pengadaan barang dari vendor + verifikasi stok/saldo melalui opname.
 
-### Rencana:
-- **Pembelian Langsung** — beli tanpa PO
-- **Purchase Order** — order ke vendor
-- **Penerimaan Barang** — terima barang dari vendor
-- **Purchase Invoice** — tagihan dari vendor
-- **Purchase Payment** — pembayaran ke vendor
+### 10.1 Purchase Order (PO)
+- CRUD Purchase Order ke vendor
+- Item PO: barang + qty + harga
+- Status workflow: draft → confirmed → partial_received → received → cancelled
+- Auto-generate nomor PO (PO/YYYY/MM/####)
+- Tracking sisa qty belum diterima
 
-### Integrasi:
-- Purchase saldo → otomatis create `SaldoTopup` → balance provider naik
-- Purchase barang → stok bertambah
-- Purchase payment → bank/kas balance berkurang
-- Hutang usaha otomatis tercatat
+### 10.2 Pembelian (Purchase)
+- **Direct Purchase** — beli langsung tanpa PO
+- **Purchase from PO** — terima barang dari PO yang sudah dikonfirmasi
+- Penerimaan parsial dari PO (bisa terima sebagian)
+- Auto-generate nomor invoice (PUR/YYYY/MM/####)
+- Auto-increase stock saat purchase confirmed
 
-### Stock & Saldo Opname (dibangun bersamaan dengan Purchase):
+### 10.3 Pembayaran Purchase
+- **Cash (Tunai)** — bayar lunas saat pembelian
+- **Credit (Hutang)** — hutang seluruhnya ke vendor
+- **Partial Payment** — bayar sebagian, sisanya hutang
+- **Down Payment (Uang Muka)** — DP di awal, mengurangi hutang saat barang diterima
+- Record tambahan pembayaran hutang kapan saja
+- Otomatis create `Payable` di AP/AR saat ada hutang
+- Jurnal otomatis per tipe pembayaran
 
-**Stock Opname (Barang):**
-- `stock_opnames` — Header: tanggal, unit usaha, status (draft/approved), penanggung jawab
-- `stock_opname_details` — Per item: stock_id, `system_qty`, `actual_qty`, `difference`, `notes`
+### 10.4 Stock Opname (Barang)
+- Header: tanggal, unit usaha, status (draft/approved/cancelled)
+- Detail per item: `system_qty`, `actual_qty`, `difference`
+- Auto-load semua barang per unit usaha
 - Setelah approved → `stocks.current_stock` di-update ke `actual_qty`
+- Selisih surplus/defisit dicatat sebagai jurnal penyesuaian (COA: 5301 Beban Selisih Stok)
+
+### 10.5 Saldo Opname (Provider)
+- Header: tanggal, unit usaha, status (draft/approved/cancelled)
+- Detail per provider: `system_balance`, `actual_balance`, `difference`
+- Auto-load semua saldo provider per unit usaha
+- Setelah approved → `saldo_providers.current_balance` di-update
 - Selisih dicatat sebagai jurnal penyesuaian
 
-**Saldo Opname:**
-- `saldo_opnames` — Header: tanggal, unit usaha, status (draft/approved)
-- `saldo_opname_details` — Per provider: saldo_provider_id, `system_balance`, `actual_balance`, `difference`, `notes`
-- Setelah approved → `saldo_providers.current_balance` di-update
-- Selisih dicatat sebagai penyesuaian
+### Integrasi:
+- Purchase → stok bertambah otomatis
+- Purchase payment → jurnal otomatis (Kas ↔ Hutang ↔ Persediaan)
+- Hutang → otomatis tercatat di AP/AR via `Payable`
+- Opname → jurnal penyesuaian otomatis
 
-> **Alasan digabung di Phase 10**: Opname paling berguna saat sudah ada alur pengadaan (purchase) yang mengubah stok/saldo secara nyata, sehingga bisa langsung diverifikasi.
+### Tabel & Model:
+| Tabel | Model |
+|-------|-------|
+| `purchase_orders` | `PurchaseOrder` |
+| `purchase_order_items` | `PurchaseOrderItem` |
+| `purchases` | `Purchase` |
+| `purchase_items` | `PurchaseItem` |
+| `purchase_payments` | `PurchasePayment` |
+| `stock_opnames` | `StockOpname` |
+| `stock_opname_details` | `StockOpnameDetail` |
+| `saldo_opnames` | `SaldoOpname` |
+| `saldo_opname_details` | `SaldoOpnameDetail` |
+
+### Services:
+- `PurchaseService` — PO CRUD, Direct/PO Purchase, Payment recording, stock increase, jurnal otomatis
+- `StockOpnameService` — Stock & Saldo opname CRUD, approval with stock/balance adjustment
+
+### Menu Sidebar (4 item):
+- **Purchase Order** — CRUD PO ke vendor
+- **Pembelian** — Direct purchase + purchase from PO + payment
+- **Stock Opname** — Verifikasi stok barang
+- **Saldo Opname** — Verifikasi saldo provider
 
 ---
 
-## Phase 11 — Sales & POS (Penjualan) 📋 Planned
+## Phase 11 — Sales & POS (Penjualan) � (NEXT)
 
 > Modul penjualan barang, saldo, dan jasa ke customer.
 

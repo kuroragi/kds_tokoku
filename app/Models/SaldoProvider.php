@@ -19,12 +19,14 @@ class SaldoProvider extends Model
         'description',
         'initial_balance',
         'current_balance',
+        'min_balance',
         'is_active',
     ];
 
     protected $casts = [
         'initial_balance' => 'decimal:2',
         'current_balance' => 'decimal:2',
+        'min_balance' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
@@ -65,6 +67,17 @@ class SaldoProvider extends Model
     public function scopeByType($query, $type)
     {
         return $query->where('type', $type);
+    }
+
+    public function scopeLowBalance($query)
+    {
+        return $query->whereColumn('current_balance', '<=', 'min_balance')
+                     ->where('min_balance', '>', 0);
+    }
+
+    public function isLowBalance(): bool
+    {
+        return $this->min_balance > 0 && $this->current_balance <= $this->min_balance;
     }
 
     // ─── Helpers ───

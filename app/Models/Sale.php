@@ -7,17 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Kuroragi\GeneralHelper\Traits\Blameable;
 
-class Purchase extends Model
+class Sale extends Model
 {
     use HasFactory, SoftDeletes, Blameable;
 
     protected $fillable = [
         'business_unit_id',
-        'vendor_id',
-        'purchase_order_id',
+        'customer_id',
         'invoice_number',
-        'purchase_type',
-        'purchase_date',
+        'sale_type',
+        'sale_date',
         'due_date',
         'notes',
         'subtotal',
@@ -36,7 +35,7 @@ class Purchase extends Model
     ];
 
     protected $casts = [
-        'purchase_date' => 'date',
+        'sale_date' => 'date',
         'due_date' => 'date',
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
@@ -50,13 +49,13 @@ class Purchase extends Model
 
     public const PAYMENT_TYPES = [
         'cash' => 'Tunai (Lunas)',
-        'credit' => 'Hutang (Kredit)',
+        'credit' => 'Piutang (Kredit)',
         'partial' => 'Bayar Sebagian',
         'down_payment' => 'Uang Muka (DP)',
-        'prepaid_deduction' => 'Potong Beban Dibayar Dimuka',
+        'prepaid_deduction' => 'Potong Pendapatan Diterima Dimuka',
     ];
 
-    public const PURCHASE_TYPES = [
+    public const SALE_TYPES = [
         'goods' => 'Barang',
         'saldo' => 'Saldo',
         'service' => 'Jasa',
@@ -83,24 +82,19 @@ class Purchase extends Model
         return $this->belongsTo(BusinessUnit::class);
     }
 
-    public function vendor()
+    public function customer()
     {
-        return $this->belongsTo(Vendor::class);
-    }
-
-    public function purchaseOrder()
-    {
-        return $this->belongsTo(PurchaseOrder::class);
+        return $this->belongsTo(Customer::class);
     }
 
     public function items()
     {
-        return $this->hasMany(PurchaseItem::class);
+        return $this->hasMany(SaleItem::class);
     }
 
     public function payments()
     {
-        return $this->hasMany(PurchasePayment::class);
+        return $this->hasMany(SalePayment::class);
     }
 
     public function journalMaster()
@@ -137,7 +131,9 @@ class Purchase extends Model
 
     public function recalculatePayments(): void
     {
-        $totalPaid = $this->payments()->sum('amount') + (float) $this->down_payment_amount + (float) $this->prepaid_deduction_amount;
+        $totalPaid = $this->payments()->sum('amount')
+            + (float) $this->down_payment_amount
+            + (float) $this->prepaid_deduction_amount;
         $this->paid_amount = $totalPaid;
         $this->remaining_amount = (float) $this->grand_total - $totalPaid;
 
@@ -153,18 +149,23 @@ class Purchase extends Model
         $this->save();
     }
 
-    public function isDirect(): bool
+    public function getSaleTypeLabel(): string
     {
-        return is_null($this->purchase_order_id);
+        return self::SALE_TYPES[$this->sale_type] ?? $this->sale_type;
     }
 
-    public function getTypeLabel(): string
+    public function getPaymentTypeLabel(): string
     {
-        return $this->isDirect() ? 'Pembelian Langsung' : 'Dari PO';
+        return self::PAYMENT_TYPES[$this->payment_type] ?? $this->payment_type;
     }
 
-    public function getPurchaseTypeLabel(): string
+    public function getStatusLabel(): string
     {
-        return self::PURCHASE_TYPES[$this->purchase_type] ?? $this->purchase_type;
+        return self::STATUSES[$this->status] ?? $this->status;
+    }
+
+    public function getPaymentStatusLabel(): string
+    {
+        return self::PAYMENT_STATUSES[$this->payment_status] ?? $this->payment_status;
     }
 }

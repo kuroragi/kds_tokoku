@@ -1,30 +1,24 @@
 <?php
 
-namespace App\Livewire\Purchase;
+namespace App\Livewire\Sales;
 
-use App\Models\Purchase;
-use App\Models\PurchaseOrder;
-use App\Models\PurchaseOrderItem;
+use App\Models\Customer;
+use App\Models\Sale;
 use App\Models\SaldoProvider;
 use App\Models\Stock;
-use App\Models\Vendor;
 use App\Services\BusinessUnitService;
-use App\Services\PurchaseService;
+use App\Services\SalesService;
 use Livewire\Component;
 
-class PurchaseForm extends Component
+class SaleForm extends Component
 {
     public bool $showModal = false;
 
-    // Mode
-    public string $purchaseMode = 'direct'; // direct or from_po
-    public $purchase_order_id = '';
-
     // Header fields
     public $business_unit_id = '';
-    public $vendor_id = '';
-    public $purchase_type = 'goods'; // goods, saldo, service, mix
-    public $purchase_date = '';
+    public $customer_id = '';
+    public $sale_type = 'goods'; // goods, saldo, service, mix
+    public $sale_date = '';
     public $due_date = '';
     public $notes = '';
     public $discount = 0;
@@ -32,88 +26,29 @@ class PurchaseForm extends Component
 
     // Payment
     public $payment_type = 'cash';
-    public $payment_source = 'kas_utama'; // kas_utama, kas_kecil, bank_utama
+    public $payment_source = 'kas_utama';
     public $paid_amount = 0;
     public $down_payment_amount = 0;
     public $prepaid_deduction_amount = 0;
 
-    // Items (dynamic rows for direct purchase)
+    // Items (dynamic rows)
     public array $items = [];
 
-    // PO items for receiving
-    public array $poItems = [];
+    protected $listeners = ['openSaleModal'];
 
-    protected $listeners = ['openPurchaseModal', 'openPurchaseFromPO'];
-
-    public function openPurchaseModal()
+    public function openSaleModal()
     {
         $this->resetForm();
-        $this->purchaseMode = 'direct';
         $this->business_unit_id = BusinessUnitService::getDefaultBusinessUnitId();
-        $this->purchase_date = date('Y-m-d');
+        $this->sale_date = date('Y-m-d');
         $this->addItem();
         $this->showModal = true;
     }
 
-    public function openPurchaseFromPO($poId = null)
-    {
-        $this->resetForm();
-        $this->purchaseMode = 'from_po';
-        $this->business_unit_id = BusinessUnitService::getDefaultBusinessUnitId();
-        $this->purchase_date = date('Y-m-d');
-
-        if ($poId) {
-            $this->purchase_order_id = $poId;
-            $this->loadPOItems();
-        }
-
-        $this->showModal = true;
-    }
-
-    public function updatedPurchaseOrderId($value)
-    {
-        if ($value) {
-            $this->loadPOItems();
-        } else {
-            $this->poItems = [];
-        }
-    }
-
-    private function loadPOItems()
-    {
-        $po = PurchaseOrder::with('items.stock')->find($this->purchase_order_id);
-        if (!$po) {
-            $this->poItems = [];
-            return;
-        }
-
-        $this->vendor_id = $po->vendor_id;
-        $this->business_unit_id = $po->business_unit_id;
-        $this->poItems = [];
-
-        foreach ($po->items as $item) {
-            $remaining = $item->remaining_quantity;
-            if ($remaining <= 0) continue;
-
-            $this->poItems[] = [
-                'purchase_order_item_id' => $item->id,
-                'stock_id' => $item->stock_id,
-                'stock_name' => $item->stock->name ?? '-',
-                'ordered_qty' => (float) $item->quantity,
-                'received_qty' => (float) $item->received_quantity,
-                'remaining_qty' => $remaining,
-                'quantity' => $remaining, // Default: receive all remaining
-                'unit_price' => (float) $item->unit_price,
-                'discount' => 0,
-                'notes' => '',
-            ];
-        }
-    }
-
     public function addItem()
     {
-        $defaultType = in_array($this->purchase_type, ['goods', 'saldo', 'service'])
-            ? $this->purchase_type
+        $defaultType = in_array($this->sale_type, ['goods', 'saldo', 'service'])
+            ? $this->sale_type
             : 'goods';
 
         $this->items[] = [
@@ -146,11 +81,10 @@ class PurchaseForm extends Component
             if ($field === 'stock_id' && $value) {
                 $stock = Stock::find($value);
                 if ($stock) {
-                    $this->items[$idx]['unit_price'] = (float) $stock->buy_price;
+                    $this->items[$idx]['unit_price'] = (float) $stock->sell_price;
                 }
             }
 
-            // When item_type changes, reset related fields
             if ($field === 'item_type') {
                 $this->items[$idx]['stock_id'] = '';
                 $this->items[$idx]['saldo_provider_id'] = '';
@@ -160,10 +94,8 @@ class PurchaseForm extends Component
         }
     }
 
-    public function updatedPurchaseType($value)
+    public function updatedSaleType($value)
     {
-        // When purchase_type changes, update all existing items' item_type
-        // (only if not mix — mix allows per-item selection)
         if (in_array($value, ['goods', 'saldo', 'service'])) {
             foreach ($this->items as $idx => $item) {
                 $this->items[$idx]['item_type'] = $value;
@@ -183,12 +115,10 @@ class PurchaseForm extends Component
 
     private function resetForm()
     {
-        $this->purchaseMode = 'direct';
-        $this->purchase_order_id = '';
         $this->business_unit_id = '';
-        $this->vendor_id = '';
-        $this->purchase_type = 'goods';
-        $this->purchase_date = '';
+        $this->customer_id = '';
+        $this->sale_type = 'goods';
+        $this->sale_date = '';
         $this->due_date = '';
         $this->notes = '';
         $this->discount = 0;
@@ -199,7 +129,6 @@ class PurchaseForm extends Component
         $this->down_payment_amount = 0;
         $this->prepaid_deduction_amount = 0;
         $this->items = [];
-        $this->poItems = [];
         $this->resetValidation();
     }
 
@@ -207,15 +136,19 @@ class PurchaseForm extends Component
     {
         $rules = [
             'business_unit_id' => 'required|exists:business_units,id',
-            'vendor_id' => 'required|exists:vendors,id',
-            'purchase_type' => 'required|in:goods,saldo,service,mix',
-            'purchase_date' => 'required|date',
-            'due_date' => 'nullable|date|after_or_equal:purchase_date',
+            'customer_id' => 'required|exists:customers,id',
+            'sale_type' => 'required|in:goods,saldo,service,mix',
+            'sale_date' => 'required|date',
+            'due_date' => 'nullable|date|after_or_equal:sale_date',
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:1000',
             'payment_type' => 'required|in:cash,credit,partial,down_payment,prepaid_deduction',
             'payment_source' => 'required_unless:payment_type,credit|in:kas_utama,kas_kecil,bank_utama',
+            'items' => 'required|array|min:1',
+            'items.*.item_type' => 'required|in:goods,saldo,service',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.unit_price' => 'required|numeric|min:0',
         ];
 
         if ($this->payment_type === 'partial') {
@@ -230,28 +163,17 @@ class PurchaseForm extends Component
             $rules['prepaid_deduction_amount'] = 'required|numeric|min:1';
         }
 
-        if ($this->purchaseMode === 'direct') {
-            $rules['items'] = 'required|array|min:1';
-            $rules['items.*.item_type'] = 'required|in:goods,saldo,service';
-            $rules['items.*.quantity'] = 'required|numeric|min:0.01';
-            $rules['items.*.unit_price'] = 'required|numeric|min:0';
-
-            // Conditional validation per item type
-            foreach ($this->items as $idx => $item) {
-                $itemType = $item['item_type'] ?? 'goods';
-                if ($itemType === 'goods') {
-                    $rules["items.{$idx}.stock_id"] = 'required|exists:stocks,id';
-                } elseif ($itemType === 'saldo') {
-                    $rules["items.{$idx}.saldo_provider_id"] = 'required|exists:saldo_providers,id';
-                    $rules["items.{$idx}.description"] = 'required|string|max:255';
-                } elseif ($itemType === 'service') {
-                    $rules["items.{$idx}.description"] = 'required|string|max:255';
-                }
+        // Conditional validation per item type
+        foreach ($this->items as $idx => $item) {
+            $itemType = $item['item_type'] ?? 'goods';
+            if ($itemType === 'goods') {
+                $rules["items.{$idx}.stock_id"] = 'required|exists:stocks,id';
+            } elseif ($itemType === 'saldo') {
+                $rules["items.{$idx}.saldo_provider_id"] = 'required|exists:saldo_providers,id';
+                $rules["items.{$idx}.description"] = 'required|string|max:255';
+            } elseif ($itemType === 'service') {
+                $rules["items.{$idx}.description"] = 'required|string|max:255';
             }
-        } else {
-            $rules['purchase_order_id'] = 'required|exists:purchase_orders,id';
-            $rules['poItems'] = 'required|array|min:1';
-            $rules['poItems.*.quantity'] = 'required|numeric|min:0.01';
         }
 
         return $rules;
@@ -259,23 +181,23 @@ class PurchaseForm extends Component
 
     protected $messages = [
         'business_unit_id.required' => 'Unit usaha wajib dipilih.',
-        'vendor_id.required' => 'Vendor wajib dipilih.',
-        'purchase_date.required' => 'Tanggal pembelian wajib diisi.',
-        'purchase_type.required' => 'Jenis pembelian wajib dipilih.',
+        'customer_id.required' => 'Pelanggan wajib dipilih.',
+        'sale_date.required' => 'Tanggal penjualan wajib diisi.',
+        'sale_type.required' => 'Jenis penjualan wajib dipilih.',
         'payment_type.required' => 'Tipe pembayaran wajib dipilih.',
         'payment_source.required_unless' => 'Sumber pembayaran wajib dipilih.',
-        'payment_source.in' => 'Sumber pembayaran tidak valid.',
         'paid_amount.required' => 'Jumlah bayar wajib diisi untuk pembayaran sebagian.',
         'paid_amount.min' => 'Jumlah bayar minimal 1.',
         'down_payment_amount.required' => 'Jumlah DP wajib diisi.',
         'down_payment_amount.min' => 'Jumlah DP minimal 1.',
+        'prepaid_deduction_amount.required' => 'Jumlah potongan pendapatan diterima dimuka wajib diisi.',
+        'prepaid_deduction_amount.min' => 'Jumlah potongan minimal 1.',
         'items.required' => 'Minimal 1 item harus diisi.',
         'items.*.stock_id.required' => 'Barang wajib dipilih.',
         'items.*.saldo_provider_id.required' => 'Provider saldo wajib dipilih.',
         'items.*.description.required' => 'Deskripsi wajib diisi.',
         'items.*.quantity.required' => 'Kuantitas wajib diisi.',
         'items.*.item_type.required' => 'Jenis item wajib dipilih.',
-        'purchase_order_id.required' => 'Purchase Order wajib dipilih.',
     ];
 
     public function save()
@@ -283,13 +205,13 @@ class PurchaseForm extends Component
         $this->business_unit_id = BusinessUnitService::resolveBusinessUnitId($this->business_unit_id);
         $this->validate();
 
-        $service = new PurchaseService();
+        $service = new SalesService();
 
         $data = [
             'business_unit_id' => $this->business_unit_id,
-            'vendor_id' => $this->vendor_id,
-            'purchase_type' => $this->purchase_type,
-            'purchase_date' => $this->purchase_date,
+            'customer_id' => $this->customer_id,
+            'sale_type' => $this->sale_type,
+            'sale_date' => $this->sale_date,
             'due_date' => $this->due_date ?: null,
             'notes' => $this->notes ?: null,
             'discount' => $this->discount ?: 0,
@@ -301,29 +223,10 @@ class PurchaseForm extends Component
             'prepaid_deduction_amount' => $this->prepaid_deduction_amount ?: 0,
         ];
 
-        if ($this->purchaseMode === 'direct') {
-            $service->createDirectPurchase($data, $this->items);
-        } else {
-            $po = PurchaseOrder::findOrFail($this->purchase_order_id);
+        $service->createSale($data, $this->items);
 
-            $receivedItems = [];
-            foreach ($this->poItems as $item) {
-                if (($item['quantity'] ?? 0) > 0) {
-                    $receivedItems[] = [
-                        'purchase_order_item_id' => $item['purchase_order_item_id'],
-                        'quantity' => $item['quantity'],
-                        'discount' => $item['discount'] ?? 0,
-                        'notes' => $item['notes'] ?? null,
-                    ];
-                }
-            }
-
-            $service->createPurchaseFromPO($po, $data, $receivedItems);
-        }
-
-        $this->dispatch('alert', type: 'success', message: 'Pembelian berhasil disimpan.');
-        $this->dispatch('refreshPurchaseList');
-        $this->dispatch('refreshPurchaseOrderList');
+        $this->dispatch('alert', type: 'success', message: 'Penjualan berhasil disimpan.');
+        $this->dispatch('refreshSaleList');
         $this->closeModal();
     }
 
@@ -331,16 +234,8 @@ class PurchaseForm extends Component
 
     public function getSubtotalProperty(): float
     {
-        if ($this->purchaseMode === 'direct') {
-            $subtotal = 0;
-            foreach ($this->items as $item) {
-                $subtotal += (($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0)) - ($item['discount'] ?? 0);
-            }
-            return $subtotal;
-        }
-
         $subtotal = 0;
-        foreach ($this->poItems as $item) {
+        foreach ($this->items as $item) {
             $subtotal += (($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0)) - ($item['discount'] ?? 0);
         }
         return $subtotal;
@@ -356,9 +251,9 @@ class PurchaseForm extends Component
         return BusinessUnitService::getAvailableUnits();
     }
 
-    public function getAvailableVendorsProperty()
+    public function getAvailableCustomersProperty()
     {
-        $query = Vendor::active();
+        $query = Customer::active();
         if ($this->business_unit_id) {
             $query->byBusinessUnit($this->business_unit_id);
         }
@@ -383,25 +278,15 @@ class PurchaseForm extends Component
         return $query->orderBy('name')->get();
     }
 
-    public function getAvailablePOsProperty()
-    {
-        $query = PurchaseOrder::receivable();
-        if ($this->business_unit_id) {
-            $query->byBusinessUnit($this->business_unit_id);
-        }
-        return $query->with('vendor')->orderBy('po_date', 'desc')->get();
-    }
-
     public function render()
     {
-        return view('livewire.purchase.purchase-form', [
+        return view('livewire.sales.sale-form', [
             'units' => $this->units,
-            'availableVendors' => $this->availableVendors,
+            'availableCustomers' => $this->availableCustomers,
             'availableStocks' => $this->availableStocks,
             'availableSaldoProviders' => $this->availableSaldoProviders,
-            'availablePOs' => $this->availablePOs,
-            'purchaseTypes' => Purchase::PURCHASE_TYPES,
-            'itemTypes' => \App\Models\PurchaseItem::ITEM_TYPES,
+            'saleTypes' => Sale::SALE_TYPES,
+            'itemTypes' => \App\Models\SaleItem::ITEM_TYPES,
             'subtotal' => $this->subtotal,
             'grandTotal' => $this->grandTotal,
             'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),

@@ -494,6 +494,15 @@ class PurchaseService
                 $data['remaining_amount'] = $grandTotal - $dpAmount;
                 $data['payment_status'] = $dpAmount >= $grandTotal ? 'paid' : ($dpAmount > 0 ? 'partial' : 'unpaid');
                 break;
+
+            case 'prepaid_deduction':
+                $prepaidAmount = (float) ($data['prepaid_deduction_amount'] ?? 0);
+                $data['prepaid_deduction_amount'] = $prepaidAmount;
+                $data['paid_amount'] = $prepaidAmount;
+                $data['down_payment_amount'] = 0;
+                $data['remaining_amount'] = $grandTotal - $prepaidAmount;
+                $data['payment_status'] = $prepaidAmount >= $grandTotal ? 'paid' : ($prepaidAmount > 0 ? 'partial' : 'unpaid');
+                break;
         }
     }
 
@@ -579,6 +588,10 @@ class PurchaseService
         } elseif ($purchase->payment_type === 'down_payment') {
             $paidAmount = (float) $purchase->down_payment_amount;
             $creditAmount = $grandTotal - $paidAmount;
+        } elseif ($purchase->payment_type === 'prepaid_deduction') {
+            $prepaidAmount = (float) $purchase->prepaid_deduction_amount;
+            $paidAmount = 0;
+            $creditAmount = $grandTotal - $prepaidAmount;
         }
 
         // Debit entries grouped by item type
@@ -675,6 +688,22 @@ class PurchaseService
                     'debit' => 0,
                     'credit' => $creditAmount,
                 ];
+            }
+        }
+
+        // Credit: Beban Dibayar Dimuka (prepaid deduction portion)
+        if ($purchase->payment_type === 'prepaid_deduction') {
+            $prepaidAmount = (float) $purchase->prepaid_deduction_amount;
+            if ($prepaidAmount > 0) {
+                $prepaidCoaCode = $this->resolveCoaCode($businessUnit, 'beban_dibayar_dimuka');
+                if ($prepaidCoaCode) {
+                    $entries[] = [
+                        'coa_code' => $prepaidCoaCode,
+                        'description' => 'Potong Beban Dibayar Dimuka - ' . $purchase->vendor->name,
+                        'debit' => 0,
+                        'credit' => $prepaidAmount,
+                    ];
+                }
             }
         }
 

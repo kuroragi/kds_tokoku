@@ -40,12 +40,14 @@ class BusinessUnitCoaMapping extends Model
                 ['key' => 'perlengkapan', 'label' => 'Perlengkapan'],
                 ['key' => 'peralatan', 'label' => 'Peralatan'],
                 ['key' => 'akumulasi_penyusutan', 'label' => 'Akumulasi Penyusutan'],
+                ['key' => 'beban_dibayar_dimuka', 'label' => 'Beban Dibayar Dimuka'],
             ],
             'pasiva' => [
                 ['key' => 'hutang_usaha', 'label' => 'Hutang Usaha'],
                 ['key' => 'hutang_bank', 'label' => 'Hutang Bank'],
                 ['key' => 'hutang_pajak', 'label' => 'Hutang Pajak'],
                 ['key' => 'hutang_gaji', 'label' => 'Hutang Gaji'],
+                ['key' => 'pendapatan_diterima_dimuka', 'label' => 'Pendapatan Diterima Dimuka'],
             ],
             'modal' => [
                 ['key' => 'modal_pemilik', 'label' => 'Modal Pemilik'],

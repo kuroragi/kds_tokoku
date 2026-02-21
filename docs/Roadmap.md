@@ -1,7 +1,7 @@
 # KDS Tokoku — Roadmap & Ringkasan Sistem
 
 > Dokumen ini mencatat progres pengembangan, arsitektur modul yang telah dibangun, dan rencana ke depan.
-> Terakhir diperbarui: **19 Februari 2026**
+> Terakhir diperbarui: **21 Februari 2026**
 
 ---
 
@@ -9,8 +9,13 @@
 
 | Metrik | Nilai |
 |--------|-------|
-| **Total Tests** | 1.191 tests, 2.766 assertions |
-| **Framework** | Laravel 11 + Livewire v3 |
+| **Total Migrations** | 32 |
+| **Total Models** | 72 |
+| **Total Services** | 21 |
+| **Total Livewire Components** | 115 |
+| **Total Controllers** | 15 |
+| **Total Routes** | ~63 |
+| **Framework** | Laravel 12 + Livewire v3 |
 | **PHP** | 8.2.22 |
 | **Database** | MySQL |
 | **Pattern** | CRUD Management Pattern (lihat `CRUD-Management-Pattern.md`) |
@@ -39,28 +44,28 @@ Modul dasar akuntansi yang menjadi tulang punggung seluruh sistem keuangan.
 ### 1.4 Laporan Keuangan
 - Laba Rugi (Income Statement)
 - Neraca Keuangan Final (Balance Sheet)
-- Export PDF
+- Export PDF (7 endpoint: TB, BS, IS, ATB, GL, GL Detail, Final BS)
 
 ### 1.5 Perpajakan & Closing
 - Koreksi fiskal (positif & negatif)
 - Kompensasi kerugian
 - Perhitungan PPh Badan
-- Wizard penutupan buku (closing)
+- Wizard penutupan buku (closing) — 5 step
 
 ### 1.6 Periode Akuntansi
-- Periode pembukuan per tahun
-- Lock period setelah closing
+- Model + migration tersedia
+- ⚠️ **Belum ada CRUD UI** — dikelola via seeder/tinker
 
 ---
 
 ## Phase 2 — Multi-Unit & Master Data ✅
 
-Fondasi untuk mendukung usaha dengan banyak cabang/unit.
-
 ### 2.1 Unit Usaha (Business Unit)
 - CRUD unit usaha (cabang/toko)
+- COA Mapping per unit
 - Semua data ter-scope per unit usaha
-- `BusinessUnitService` — auto-filter untuk non-superadmin
+- `BusinessUnitService` — auto-filter non-superadmin
+- Observer auto-create cash account
 
 ### 2.2 User & Role Management
 - CRUD User, Role, Permission
@@ -69,496 +74,261 @@ Fondasi untuk mendukung usaha dengan banyak cabang/unit.
 
 ### 2.3 Jabatan (Position)
 - Master data jabatan karyawan
-- Linked ke unit usaha
+- Template komponen gaji per jabatan
 
 ---
 
 ## Phase 3 — Product & Inventory Management ✅
 
-### 3.1 Kategori Stok
-- Master kategori: Barang, Jasa, Saldo
-- Tipe kategori menentukan perilaku produk
-
-### 3.2 Grup Kategori
-- Sub-kategorisasi di bawah kategori stok
-- Hierarki: Kategori → Grup → Stok
-
-### 3.3 Satuan (Unit of Measure)
-- Master satuan: pcs, kg, liter, box, dll
-- Seeder data default
-
-### 3.4 Stok
-- Master data produk/barang
-- Tracking stok: `current_stock`, `min_stock`
-- Low stock detection
-- Barcode support
+### 3.1 Kategori Stok — `stock_categories`
+### 3.2 Grup Kategori — `category_groups`
+### 3.3 Satuan (UoM) — `unit_of_measures`
+### 3.4 Stok — `stocks` (current_stock, min_stock, barcode)
+### 3.5 Warehouse Monitor — dashboard monitoring stok real-time
 
 ---
 
 ## Phase 4 — Business Partners ✅
 
-### 4.1 Karyawan (Employee)
-- Data pribadi, jabatan, status kerja
-- Linked ke unit usaha & jabatan
-
-### 4.2 Pelanggan (Customer)
-- Data customer, kontak, alamat
-
-### 4.3 Vendor
-- Data supplier/penyedia barang & jasa
-
-### 4.4 Partner
-- Mitra usaha / pihak ketiga
+### 4.1 Karyawan — `employees` (data pribadi, jabatan, status kerja)
+### 4.2 Pelanggan — `customers` (kontak, alamat, NPWP)
+### 4.3 Vendor — `vendors` (supplier, NPWP)
+### 4.4 Partner — `partners` (mitra usaha)
 
 ---
 
 ## Phase 5 — Asset Management ✅
 
-### 5.1 Kategori Aset
-- Jenis aset: kendaraan, peralatan, properti, dll
-- Metode penyusutan per kategori
-
-### 5.2 Daftar Aset
-- Master data aset perusahaan
-- Harga perolehan, umur ekonomis, nilai sisa
-
-### 5.3 Penyusutan (Depreciation)
-- Perhitungan penyusutan otomatis (garis lurus)
-- Tracking akumulasi penyusutan
-
-### 5.4 Mutasi (Transfer)
-- Perpindahan aset antar unit usaha
-
-### 5.5 Perbaikan (Repair)
-- Catatan perbaikan aset
-- Biaya perbaikan
-
-### 5.6 Disposal
-- Pelepasan/penghapusan aset
-- Tracking keuntungan/kerugian pelepasan
-
-### 5.7 Laporan Aset
-- Register aset
-- Nilai buku
-- Penyusutan per periode
-- Riwayat aset
+### 5.1 Kategori Aset — metode penyusutan per kategori
+### 5.2 Daftar Aset — harga perolehan, umur ekonomis, nilai sisa
+### 5.3 Penyusutan — perhitungan otomatis (garis lurus)
+### 5.4 Mutasi — perpindahan aset antar unit usaha
+### 5.5 Perbaikan — catatan & biaya perbaikan
+### 5.6 Disposal — pelepasan + tracking keuntungan/kerugian
+### 5.7 Laporan Aset — 4 laporan (Register, Nilai Buku, Penyusutan, Riwayat)
 
 ---
 
 ## Phase 6 — Financial Management ✅
 
-### 6.1 Hutang Usaha (Payable)
-- Tracking hutang ke vendor
-- Pembayaran hutang (parsial/lunas)
-- Aging report
-
-### 6.2 Piutang Usaha (Receivable)
-- Tracking piutang dari customer
-- Penerimaan pembayaran (parsial/lunas)
-- Aging report
-
-### 6.3 Laporan AP/AR
-- Aging Report (umur hutang/piutang)
-- Outstanding Report
-- Riwayat Pembayaran
-
-### 6.4 Pinjaman Karyawan (Employee Loan)
-- Input pinjaman karyawan
-- Cicilan/angsuran
-- Integrasi dengan payroll (potongan gaji)
+### 6.1 Hutang Usaha (AP) — tracking + pembayaran parsial/lunas + aging
+### 6.2 Piutang Usaha (AR) — tracking + penerimaan + aging
+### 6.3 Laporan AP/AR — Aging, Outstanding, Riwayat Pembayaran
+### 6.4 Pinjaman Karyawan — pinjaman + cicilan + integrasi payroll
 
 ---
 
 ## Phase 7 — Payroll (Penggajian) ✅
 
-### 7.1 Komponen Gaji
-- Komponen tunjangan (penambah)
-- Komponen potongan (pengurang)
-- Tipe: tetap, persentase
-
-### 7.2 Setting Payroll
-- Template gaji per karyawan
-- Mapping komponen ke karyawan
-
-### 7.3 Penggajian (Payroll)
-- Buat payroll per periode per unit usaha
-- Perhitungan otomatis: gaji pokok + tunjangan - potongan
-- Potongan pinjaman otomatis dari employee loan
-- Status: draft, approved, paid
-
-### 7.4 Laporan Payroll
-- Rekap payroll per periode
-- Laporan per karyawan
-- Laporan BPJS
+### 7.1 Komponen Gaji — tunjangan & potongan (tetap/persentase)
+### 7.2 Setting Payroll — template gaji per karyawan
+### 7.3 Penggajian — kalkulasi otomatis + PPh21 TER + BPJS
+### 7.4 Laporan Payroll — Rekap, Per Karyawan, BPJS
 
 ---
 
 ## Phase 8 — Saldo Management ✅
 
-> Modul untuk mengelola saldo digital: pulsa, token listrik, paket data, dll.
-
-### 8.1 Penyedia Saldo (Provider)
-- Master data penyedia: Buku Warung, Dana, Shopee Pay, dll
-- Tipe: e-wallet, bank, lainnya
-- Balance tracking per provider
-
-### 8.2 Produk Saldo
-- Daftar produk yang dijual: Pulsa 50K, Token 100K, dll
-- Harga modal (buy_price) & harga jual (sell_price)
-- Profit margin otomatis
-- Optional linked ke provider tertentu
-
-### 8.3 Top Up Saldo
-- Catat pembelian saldo ke provider
-- Metode: transfer, tunai, e-wallet, lainnya
-- Balance provider otomatis bertambah (amount - fee)
-
-### 8.4 Transaksi Saldo
-- Catat penjualan saldo ke customer
-- Auto-fill harga dari produk
-- Profit otomatis dihitung (sell_price - buy_price)
-- Balance provider otomatis berkurang (buy_price)
-
-### Catatan Arsitektur Saldo:
-- **Top Up & Transaksi di menu Saldo** = manual entry / quick action / koreksi
-- **Nanti**: Top up utama lewat modul **Purchase**, penjualan utama lewat modul **Sales/POS**
-- Modul Saldo tetap jadi **single source of truth** untuk balance tracking
+### 8.1 Penyedia Saldo — e-wallet/bank provider + balance tracking
+### 8.2 Produk Saldo — harga modal & jual + profit margin
+### 8.3 Top Up Saldo — pembelian saldo ke provider
+### 8.4 Transaksi Saldo — penjualan saldo ke customer
 
 ---
 
 ## Phase 9 — Bank Management ✅
 
-> Modul untuk mengelola rekening bank, kas, dan perpindahan dana.
-
-### 9.1 Master Bank (`banks`)
-- Daftar bank: BNI, BRI, BCA, Mandiri, dll
-- CRUD sederhana
-
-### 9.2 Rekening Bank (`bank_accounts`)
-- Rekening milik usaha + balance tracking
-- Nomor rekening, nama pemilik
-- `initial_balance`, `current_balance` (auto-update)
-- Per unit usaha
-
-### 9.3 Kas Usaha (`cash_accounts`)
-- Saldo kas per unit usaha
-- **Auto-create default** saat unit usaha baru dibuat
-- `current_balance` ter-update otomatis saat transfer
-
-### 9.4 Fee Matrix (`bank_fee_matrix`)
-- Biaya admin antar-bank (BNI→BRI = 2.500, sesama BNI = 0, dll)
-- Auto-fill di form transfer, tapi **bisa di-override**
-- Fleksibel untuk berbagai metode (BI-Fast, RTGS, dll)
-
-### 9.5 Transfer Dana (`fund_transfers`)
-- Perpindahan dana: Kas ↔ Bank, Bank ↔ Bank
-- Source & destination polymorphic (cash / bank_account)
-- Admin fee tracking — dibebankan ke pengirim
-- Balance otomatis berubah di kedua sisi
-
-### Contoh Alur Transfer:
-```
-Kas → BNI:   amount=5.000.000, fee=0      → Kas -5jt, BNI +5jt
-BNI → BRI:   amount=1.000.000, fee=2.500  → BNI -1.002.500, BRI +1jt
-BCA → Kas:   amount=500.000,   fee=0      → BCA -500rb, Kas +500rb
-```
-
-### Menu Sidebar (3 item):
-- **Daftar Bank** — CRUD master bank + fee matrix
-- **Rekening & Kas** — CRUD bank_accounts + lihat cash_accounts
-- **Transfer Dana** — Catat perpindahan, balance otomatis berubah
+### 9.1 Master Bank — CRUD bank (BNI, BRI, BCA, dll)
+### 9.2 Rekening Bank — balance tracking per unit usaha
+### 9.3 Kas Usaha — auto-create per unit, balance auto-update
+### 9.4 Fee Matrix — biaya antar bank (auto-fill, bisa override)
+### 9.5 Transfer Dana — Kas↔Bank, Bank↔Bank, balance otomatis
 
 ---
 
-## Phase 10 — Purchase (Pembelian) & Opname ✅
+## Phase 10 — Purchase & Opname ✅
 
-> Modul pengadaan barang dari vendor + verifikasi stok/saldo melalui opname.
-
-### 10.1 Purchase Order (PO)
-- CRUD Purchase Order ke vendor
-- Item PO: barang + qty + harga
-- Status workflow: draft → confirmed → partial_received → received → cancelled
-- Auto-generate nomor PO (PO/YYYY/MM/####)
-- Tracking sisa qty belum diterima
-
-### 10.2 Pembelian (Purchase)
-- **Direct Purchase** — beli langsung tanpa PO
-- **Purchase from PO** — terima barang dari PO yang sudah dikonfirmasi
-- Penerimaan parsial dari PO (bisa terima sebagian)
-- Auto-generate nomor invoice (PUR/YYYY/MM/####)
-- Auto-increase stock saat purchase confirmed
-
-### 10.3 Pembayaran Purchase
-- **Cash (Tunai)** — bayar lunas saat pembelian
-- **Credit (Hutang)** — hutang seluruhnya ke vendor
-- **Partial Payment** — bayar sebagian, sisanya hutang
-- **Down Payment (Uang Muka)** — DP di awal, mengurangi hutang saat barang diterima
-- Record tambahan pembayaran hutang kapan saja
-- Otomatis create `Payable` di AP/AR saat ada hutang
-- Jurnal otomatis per tipe pembayaran
-
-### 10.4 Stock Opname (Barang)
-- Header: tanggal, unit usaha, status (draft/approved/cancelled)
-- Detail per item: `system_qty`, `actual_qty`, `difference`
-- Auto-load semua barang per unit usaha
-- Setelah approved → `stocks.current_stock` di-update ke `actual_qty`
-- Selisih surplus/defisit dicatat sebagai jurnal penyesuaian (COA: 5301 Beban Selisih Stok)
-
-### 10.5 Saldo Opname (Provider)
-- Header: tanggal, unit usaha, status (draft/approved/cancelled)
-- Detail per provider: `system_balance`, `actual_balance`, `difference`
-- Auto-load semua saldo provider per unit usaha
-- Setelah approved → `saldo_providers.current_balance` di-update
-- Selisih dicatat sebagai jurnal penyesuaian
-
-### Integrasi:
-- Purchase → stok bertambah otomatis
-- Purchase payment → jurnal otomatis (Kas ↔ Hutang ↔ Persediaan)
-- Hutang → otomatis tercatat di AP/AR via `Payable`
-- Opname → jurnal penyesuaian otomatis
-
-### Tabel & Model:
-| Tabel | Model |
-|-------|-------|
-| `purchase_orders` | `PurchaseOrder` |
-| `purchase_order_items` | `PurchaseOrderItem` |
-| `purchases` | `Purchase` |
-| `purchase_items` | `PurchaseItem` |
-| `purchase_payments` | `PurchasePayment` |
-| `stock_opnames` | `StockOpname` |
-| `stock_opname_details` | `StockOpnameDetail` |
-| `saldo_opnames` | `SaldoOpname` |
-| `saldo_opname_details` | `SaldoOpnameDetail` |
-
-### Services:
-- `PurchaseService` — PO CRUD, Direct/PO Purchase, Payment recording, stock increase, jurnal otomatis
-- `StockOpnameService` — Stock & Saldo opname CRUD, approval with stock/balance adjustment
-
-### Menu Sidebar (4 item):
-- **Purchase Order** — CRUD PO ke vendor
-- **Pembelian** — Direct purchase + purchase from PO + payment
-- **Stock Opname** — Verifikasi stok barang
-- **Saldo Opname** — Verifikasi saldo provider
+### 10.1 Purchase Order — workflow draft→confirmed→received
+### 10.2 Pembelian — direct + dari PO + penerimaan parsial
+### 10.3 Pembayaran — Cash/Credit/Partial/Down Payment + auto AP
+### 10.4 Stock Opname — verifikasi stok + auto-adjust + jurnal
+### 10.5 Saldo Opname — verifikasi balance provider + auto-adjust
 
 ---
 
-## Phase 11 — Sales & POS (Penjualan) � (NEXT)
+## Phase 11 — Sales (Penjualan) ✅
 
-> Modul penjualan barang, saldo, dan jasa ke customer.
-
-### Rencana:
-- **POS (Point of Sales)** — kasir frontend
-- **Penjualan Langsung** — tanpa SO
-- **Sales Order** — order dari customer
-- **Pengiriman Barang** — kirim barang ke customer
-- **Sales Invoice** — tagihan ke customer
-- **Sales Payment** — penerimaan pembayaran
-
-### Integrasi:
-- Penjualan saldo → otomatis create `SaldoTransaction` → balance provider turun
-- Penjualan barang → stok berkurang
-- Penjualan jasa (transfer bank, pembuatan aplikasi, dll) → tanpa stok
-- Sales payment → bank/kas balance bertambah
-- Piutang usaha otomatis tercatat
-
-### Fitur Harga Fleksibel (direncanakan):
-- **`saldo_price_adjustments`** — tracking perubahan harga produk saldo
-- Tipe: `permanent` / `temporary_discount` / `vendor_promo`
-- Kasir bisa klik "Ubah Harga" → sistem tanya: permanen atau sementara?
-- Diskon sementara punya `end_date`, auto-expire
-- Transaksi selalu simpan harga aktual (sudah ada di `saldo_transactions`)
-
-### Jenis Penjualan Jasa:
-| Tipe | Contoh | Stok? | Harga |
-|------|--------|-------|-------|
-| Jasa transfer bank | Transfer ke BNI/BRI | Tidak | Fleksibel (fee bank + margin) |
-| Jasa digital (saldo) | Pulsa, token listrik | Ya (balance) | From product master |
-| Jasa profesional | Pembuatan aplikasi | Tidak | Custom per project |
+### 11.1 Penjualan — CRUD sale + barang/saldo/jasa
+### 11.2 Pembayaran — Cash/Credit/Partial + auto AR
+### 11.3 Integrasi — stok berkurang, saldo berkurang, jurnal otomatis
 
 ---
 
-## Phase 12+ — Rencana Jangka Panjang 📋 Planned
+## Phase 12 — Advanced Features ✅
 
 ### 12.1 Bank Reconciliation
-- Rekonsiliasi saldo bank vs catatan internal
-- Import mutasi bank (CSV/Excel)
-- Matching otomatis & manual
+- Import mutasi bank (CSV/Excel via Maatwebsite)
+- Preset kolom BCA/BNI/BRI/Mandiri
+- Auto-matching (3 strategi: reference, fund transfer, journal)
+- Manual matching + adjustment
 
 ### 12.2 Dashboard
-- Ringkasan per unit usaha
-- Grafik pendapatan, pengeluaran, laba
-- Alert: stok rendah, hutang jatuh tempo, aset perlu maintenance
+- Summary cards (penjualan, pembelian, laba kotor, customer baru)
+- Grafik ApexCharts (Sales vs Purchases trend)
+- Cash flow, hutang/piutang, bank balance
+- Top produk, low stock alerts, transaksi terbaru
+- Filter periode + unit usaha
 
-### 12.3 Project/Job Order Management
-- Untuk jasa kompleks (pembuatan aplikasi, proyek)
-- Tracking progress, milestone, billing per tahap
+### 12.3 Project / Job Order
+- CRUD project (planning→active→completed)
+- Tracking biaya (material/labor/overhead)
+- Tracking pendapatan
+- Budget vs actual + profit margin
 
 ### 12.4 Laporan Pajak Lanjutan
-- SPT Tahunan
-- Faktur Pajak
-- E-Faktur integration
+- Faktur Pajak (keluaran/masukan) — CRUD + status workflow
+- SPT Masa PPN — ringkasan keluaran vs masukan, kurang/lebih bayar
+- SPT Tahunan — peredaran usaha, HPP, PPN bulanan, PPh Badan
+- Generate otomatis dari transaksi penjualan & pembelian
+
+### 12.5 Saldo Awal (Opening Balance)
+- Input saldo awal per COA per unit usaha per periode
+- Posting ke jurnal otomatis
+- Unpost / delete support
+
+---
+
+## Backend Audit Summary (21 Feb 2026)
+
+### Completeness: 58/59 modul ✅
+
+| Group | Modules | Status |
+|-------|---------|--------|
+| Akuntansi | COA, Jurnal, Buku Besar, Neraca Saldo, Laba Rugi, Adj. Journal, Adj. TB, Final BS, PDF Reports | ✅ All Complete |
+| Perpajakan | Tax Closing Wizard (5 step), Faktur Pajak, SPT Masa/Tahunan | ✅ All Complete |
+| Master Data | Business Unit, User/Role/Permission, Position, Employee, Customer, Vendor, Partner | ✅ All Complete |
+| Inventory | Stock Category, Category Group, UoM, Stock, Warehouse Monitor | ✅ All Complete |
+| Saldo | Provider, Product, TopUp, Transaction, Opname | ✅ All Complete |
+| Asset | Category, List, Depreciation, Transfer, Repair, Disposal, 4 Reports | ✅ All Complete |
+| Keuangan | AP, AR, 3 Reports, Employee Loan | ✅ All Complete |
+| Payroll | Komponen, Setting, Payroll, 3 Reports | ✅ All Complete |
+| Bank | Master, Account, Kas, Transfer, Mutation, Reconciliation | ✅ All Complete |
+| Purchase | PO, Purchase, Payment, Stock Opname, Saldo Opname | ✅ All Complete |
+| Sales | Sale, Payment | ✅ All Complete |
+| Advanced | Dashboard, Project, Opening Balance | ✅ All Complete |
+| Periode | Model only | ⚠️ No CRUD UI |
+
+**Backend ERP READY — siap masuk tahap frontend SaaS.**
+
+---
+
+## Phase 13 — SaaS Frontend & Pricing 📋 NEXT
+
+> Transformasi dari internal ERP menjadi produk SaaS multi-tenant untuk UMKM Indonesia.
+
+### 13.1 Landing Page & Marketing Site
+- Hero section dengan value proposition untuk UMKM
+- Feature showcase (modul-modul ERP)
+- Pricing table interaktif (4 paket)
+- Testimoni, FAQ, CTA
+- Responsive design (mobile-first)
+
+### 13.2 Pricing & Paket Berlangganan
+
+| Fitur | Trial | Basic | Medium | Premium |
+|-------|-------|-------|--------|---------|
+| **Harga/bulan** | Gratis (14 hari) | Rp 99.000 | Rp 249.000 | Rp 499.000 |
+| **Unit Usaha** | 1 | 1 | 3 | Unlimited |
+| **User** | 1 | 3 | 10 | Unlimited |
+| **COA & Jurnal** | ✅ | ✅ | ✅ | ✅ |
+| **Neraca & Laba Rugi** | ✅ | ✅ | ✅ | ✅ |
+| **Master Data (Stok/Customer/Vendor)** | ✅ | ✅ | ✅ | ✅ |
+| **Pembelian (Purchase)** | ❌ | ✅ | ✅ | ✅ |
+| **Penjualan (Sales)** | ❌ | ✅ | ✅ | ✅ |
+| **Hutang/Piutang (AP/AR)** | ❌ | ✅ | ✅ | ✅ |
+| **Bank & Transfer** | ❌ | ✅ | ✅ | ✅ |
+| **Saldo Management** | ❌ | ✅ | ✅ | ✅ |
+| **PDF Reports** | ❌ | ✅ | ✅ | ✅ |
+| **Asset Management** | ❌ | ❌ | ✅ | ✅ |
+| **Payroll** | ❌ | ❌ | ✅ | ✅ |
+| **Employee Loan** | ❌ | ❌ | ✅ | ✅ |
+| **Perpajakan (SPT/Faktur)** | ❌ | ❌ | ✅ | ✅ |
+| **Opening Balance** | ❌ | ❌ | ✅ | ✅ |
+| **Stock Opname** | ❌ | ❌ | ✅ | ✅ |
+| **Export Excel** | ❌ | ❌ | ✅ | ✅ |
+| **Multi-Role & Permission** | ❌ | ❌ | ✅ | ✅ |
+| **Bank Reconciliation** | ❌ | ❌ | ❌ | ✅ |
+| **Project / Job Order** | ❌ | ❌ | ❌ | ✅ |
+| **Dashboard Advanced** | Basic | Basic | Full | Full |
+| **Support** | Community | Email | Priority | Dedicated |
+
+> **Catatan**: Superadmin access = internal team only, tidak tersedia di paket manapun.
+
+### 13.3 Tenant & Subscription System
+- Tabel `tenants` — profil perusahaan, plan, status
+- Tabel `subscriptions` — plan, durasi, payment status
+- Tabel `plans` & `plan_features` — konfigurasi fitur per paket
+- Middleware `CheckSubscription` — gating fitur per plan
+- Grace period (3 hari) setelah expired
+- Trial auto-expire 14 hari
+
+### 13.4 Registration & Onboarding
+- Register + email verification
+- Wizard onboarding (profil usaha → pilih paket → setup awal)
+- Auto-create business unit + cash account + default COA
+- Sample data option (untuk trial)
+
+### 13.5 UI/UX Redesign
+- Modern sidebar + topbar
+- Consistent design system
+- Loading states, empty states, error states
+- Mobile-responsive
+- Dark mode (optional)
+
+### 13.6 Payment Integration
+- Midtrans / Xendit
+- Invoice otomatis
+- Auto-activate/deactivate
+- Notifikasi jatuh tempo
+
+---
+
+## Phase 14 — Polish & Production 📋 Future
+
+### 14.1 Audit Log / Activity Log
+### 14.2 Notification System (email + in-app)
+### 14.3 Data Import/Export (bulk)
+### 14.4 API untuk integrasi pihak ketiga
+### 14.5 Backup & Restore per tenant
+### 14.6 Performance optimization (caching, queue)
+### 14.7 POS (Point of Sales) — kasir frontend
 
 ---
 
 ## Arsitektur & Konvensi
 
 ### Stack Teknologi
-- **Backend**: Laravel 11, PHP 8.2
-- **Frontend**: Livewire v3, Bootstrap, Blade
+- **Backend**: Laravel 12, PHP 8.2
+- **Frontend**: Livewire v3, Bootstrap 5, Blade, ApexCharts
 - **Database**: MySQL
-- **Testing**: PHPUnit (Feature tests)
-- **Package**: Spatie Permission, DomPDF, Blameable trait
+- **Package**: Spatie Permission, DomPDF, Maatwebsite Excel, Blameable trait
 
 ### Pattern yang Digunakan
 - **CRUD Management Pattern** — Controller → Page View → Livewire List/Form → Blade
 - **BusinessUnitService** — Multi-tenant scoping, auto-filter per user
 - **Service Layer** — Business logic di Service class (DB::transaction)
-- **Model::withoutEvents()** — Digunakan di tests untuk bypass Blameable
+- **Computed Properties** — Livewire 3: `$this->propertyName` di blade
 - **Bahasa**: UI dalam Bahasa Indonesia, code/variable dalam English
 
-### Struktur File per Modul
-```
-app/
-├── Http/Controllers/{Module}Controller.php
-├── Livewire/{Module}/
-│   ├── {Module}List.php
-│   └── {Module}Form.php
-├── Models/{Model}.php
-└── Services/{Module}Service.php
+### Inventory
 
-resources/views/
-├── pages/{module}/{page}.blade.php
-└── livewire/{module}/
-    ├── {module}-list.blade.php
-    └── {module}-form.blade.php
-
-database/migrations/
-└── {date}_create_{module}_tables.php
-
-tests/Feature/
-└── {Module}Test.php
-```
-
-### Menu Sidebar (Struktur Aktif)
-```
-Main
-└── Dashboard (placeholder)
-
-Master Data
-├── Perusahaan & Sistem
-│   ├── Unit Usaha ✅
-│   ├── User ✅
-│   ├── Role ✅
-│   ├── Permission ✅
-│   └── Jabatan ✅
-└── Config Akuntansi
-    ├── Chart of Accounts ✅
-    └── Periode (placeholder)
-
-Product Management
-└── Stok
-    ├── Kategori Stok ✅
-    ├── Grup Kategori ✅
-    ├── Satuan ✅
-    └── Stok ✅
-
-Inventory & Saldo
-└── Saldo
-    ├── Penyedia Saldo ✅
-    ├── Produk Saldo ✅
-    ├── Top Up Saldo ✅
-    └── Transaksi Saldo ✅
-
-Business Partners
-└── Kartu Nama
-    ├── Karyawan ✅
-    ├── Pelanggan ✅
-    ├── Vendor ✅
-    └── Partner ✅
-
-Asset Management
-├── Manajemen Aset
-│   ├── Kategori Aset ✅
-│   ├── Daftar Aset ✅
-│   ├── Penyusutan ✅
-│   ├── Mutasi ✅
-│   ├── Perbaikan ✅
-│   └── Disposal ✅
-└── Laporan Aset
-    ├── Daftar Aset ✅
-    ├── Nilai Buku ✅
-    ├── Penyusutan per Periode ✅
-    └── Riwayat Aset ✅
-
-Transaction
-├── Purchase (placeholder — 5 submenu)
-└── Sales (placeholder — 6 submenu)
-
-Financial Management
-├── Hutang / Piutang
-│   ├── Hutang Usaha ✅
-│   └── Piutang Usaha ✅
-├── Laporan AP/AR
-│   ├── Aging Report ✅
-│   ├── Outstanding Report ✅
-│   └── Riwayat Pembayaran ✅
-└── Pinjaman
-    └── Pinjaman Karyawan ✅
-
-Payroll
-├── Penggajian
-│   ├── Komponen Gaji ✅
-│   ├── Setting Payroll ✅
-│   └── Payroll ✅
-└── Laporan Payroll
-    ├── Rekap Payroll ✅
-    ├── Laporan per Karyawan ✅
-    └── Laporan BPJS ✅
-
-Akuntansi
-├── Jurnal ✅
-├── Buku Besar ✅
-├── Neraca Saldo ✅
-├── Laba Rugi ✅
-├── Jurnal Penyesuaian ✅
-├── Neraca Penyesuaian ✅
-└── Perpajakan & Closing ✅
-
-Laporan Keuangan
-└── Neraca Keuangan Final ✅
-
-Banking & Reconciliation (placeholder — 4 submenu)
-└── Bank
-    ├── Rekening Bank 🔜
-    ├── Transaksi Bank 🔜
-    ├── Template Biaya 🔜
-    └── Rekonsiliasi 🔜
-```
-
----
-
-## Keputusan Desain Penting
-
-### 1. Saldo: Master + Quick Action, Operasi Utama di Purchase/Sales
-- Menu Saldo menyediakan manual entry untuk fleksibilitas
-- Alur utama nanti: Purchase → SaldoTopup, Sales → SaldoTransaction
-- Modul Saldo = **single source of truth** untuk balance
-
-### 2. Harga Produk Saldo: Fleksibel
-- `saldo_products` menyimpan harga standar (auto-fill)
-- `saldo_transactions` menyimpan harga aktual per transaksi (sudah fleksibel)
-- Nanti ditambah `saldo_price_adjustments` untuk tracking: permanen vs diskon sementara vs promo vendor
-
-### 3. Bank Management: Balance Tracking Mandiri
-- Kas & Bank punya `current_balance` masing-masing
-- Setiap transfer/transaksi otomatis update balance
-- Fee matrix sebagai saran, bisa di-override
-
-### 4. Jasa = Bagian dari Sales
-- Jasa transfer bank, jasa digital (saldo), jasa profesional — semua masuk Sales
-- Perbedaannya: jasa tidak punya stok fisik
-- `stock_categories.type = 'jasa'` sudah tersedia
-
-### 5. Cash Account Default
-- Setiap unit usaha otomatis punya 1 cash account
-- Balance ter-update saat ada transfer kas ↔ bank
+| Komponen | Jumlah |
+|----------|--------|
+| Migrations | 32 |
+| Models | 72 |
+| Services | 21 |
+| Livewire Components | 115 |
+| Blade Views | 120+ |
+| Controllers | 15 |
+| Routes | ~63 |
+| Database Tables | ~55 |

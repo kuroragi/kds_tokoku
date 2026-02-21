@@ -15,7 +15,6 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SaldoController;
-use App\Livewire\Coa\CoaList;
 use App\Mail\SendMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;

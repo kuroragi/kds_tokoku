@@ -6,12 +6,12 @@
                 <label class="form-label small mb-1">Pencarian</label>
                 <input type="text" class="form-control form-control-sm" wire:model.live.debounce.300ms="search" placeholder="Cari unit usaha / periode...">
             </div>
-            @if($isSuperAdmin)
+            @if($this->isSuperAdmin)
             <div class="col-md-3">
                 <label class="form-label small mb-1">Unit Usaha</label>
                 <select class="form-select form-select-sm" wire:model.live="filterUnit">
                     <option value="">-- Semua Unit --</option>
-                    @foreach($units as $unit)
+                    @foreach($this->units as $unit)
                     <option value="{{ $unit->id }}">{{ $unit->code }} — {{ $unit->name }}</option>
                     @endforeach
                 </select>
@@ -52,7 +52,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($openingBalances as $idx => $ob)
+                    @forelse($this->openingBalances as $idx => $ob)
                     <tr>
                         <td class="text-muted">{{ $idx + 1 }}</td>
                         <td>

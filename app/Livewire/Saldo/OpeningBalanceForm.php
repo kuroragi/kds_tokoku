@@ -2,8 +2,6 @@
 
 namespace App\Livewire\Saldo;
 
-use App\Models\BusinessUnit;
-use App\Models\COA;
 use App\Models\OpeningBalance;
 use App\Models\Period;
 use App\Services\BusinessUnitService;

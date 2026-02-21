@@ -6,7 +6,6 @@ use App\Models\BusinessUnit;
 use App\Models\COA;
 use App\Models\OpeningBalance;
 use App\Models\OpeningBalanceEntry;
-use App\Models\Period;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;

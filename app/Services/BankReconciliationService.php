@@ -8,7 +8,6 @@ use App\Models\BankMutation;
 use App\Models\BankReconciliation;
 use App\Models\BankReconciliationItem;
 use App\Models\FundTransfer;
-use App\Models\Journal;
 use App\Models\JournalMaster;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;

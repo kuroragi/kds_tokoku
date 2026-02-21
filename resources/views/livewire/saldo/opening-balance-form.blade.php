@@ -16,15 +16,15 @@
                         <div class="row g-3 mb-4">
                             <div class="col-md-3">
                                 <label class="form-label">Unit Usaha <span class="text-danger">*</span></label>
-                                @if($isSuperAdmin)
+                                @if($this->isSuperAdmin)
                                 <select class="form-select @error('business_unit_id') is-invalid @enderror" wire:model.live="business_unit_id" {{ $isEditing ? 'disabled' : '' }}>
                                     <option value="">-- Pilih Unit --</option>
-                                    @foreach($units as $unit)
+                                    @foreach($this->units as $unit)
                                     <option value="{{ $unit->id }}">{{ $unit->code }} — {{ $unit->name }}</option>
                                     @endforeach
                                 </select>
                                 @else
-                                <input type="text" class="form-control" value="{{ $units->firstWhere('id', $business_unit_id)?->name ?? '-' }}" readonly>
+                                <input type="text" class="form-control" value="{{ $this->units->firstWhere('id', $business_unit_id)?->name ?? '-' }}" readonly>
                                 @endif
                                 @error('business_unit_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
@@ -33,7 +33,7 @@
                                 <label class="form-label">Periode <span class="text-danger">*</span></label>
                                 <select class="form-select @error('period_id') is-invalid @enderror" wire:model="period_id" {{ $isEditing ? 'disabled' : '' }}>
                                     <option value="">-- Pilih Periode --</option>
-                                    @foreach($periods as $period)
+                                    @foreach($this->periods as $period)
                                     <option value="{{ $period->id }}">{{ $period->name }} ({{ $period->code }})</option>
                                     @endforeach
                                 </select>
@@ -58,7 +58,7 @@
                                 <div class="card border-0 bg-light">
                                     <div class="card-body py-2 text-center">
                                         <div class="text-muted small">Total Debit</div>
-                                        <div class="fw-bold text-primary fs-5">Rp {{ number_format($totalDebit, 0, ',', '.') }}</div>
+                                        <div class="fw-bold text-primary fs-5">Rp {{ number_format($this->totalDebit, 0, ',', '.') }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -66,19 +66,19 @@
                                 <div class="card border-0 bg-light">
                                     <div class="card-body py-2 text-center">
                                         <div class="text-muted small">Total Credit</div>
-                                        <div class="fw-bold text-primary fs-5">Rp {{ number_format($totalCredit, 0, ',', '.') }}</div>
+                                        <div class="fw-bold text-primary fs-5">Rp {{ number_format($this->totalCredit, 0, ',', '.') }}</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="card border-0 {{ $isBalanced ? 'bg-success bg-opacity-10' : 'bg-danger bg-opacity-10' }}">
+                                <div class="card border-0 {{ $this->isBalanced ? 'bg-success bg-opacity-10' : 'bg-danger bg-opacity-10' }}">
                                     <div class="card-body py-2 text-center">
                                         <div class="text-muted small">Selisih</div>
-                                        <div class="fw-bold fs-5 {{ $isBalanced ? 'text-success' : 'text-danger' }}">
-                                            @if($isBalanced)
+                                        <div class="fw-bold fs-5 {{ $this->isBalanced ? 'text-success' : 'text-danger' }}">
+                                            @if($this->isBalanced)
                                             <i class="ri-checkbox-circle-line"></i> Balance
                                             @else
-                                            <i class="ri-error-warning-line"></i> Rp {{ number_format($difference, 0, ',', '.') }}
+                                            <i class="ri-error-warning-line"></i> Rp {{ number_format($this->difference, 0, ',', '.') }}
                                             @endif
                                         </div>
                                     </div>
@@ -184,7 +184,7 @@
 
                     <div class="modal-footer bg-light py-2">
                         <div class="me-auto">
-                            @if(!$isBalanced && count($entries) > 0)
+                            @if(!$this->isBalanced && count($entries) > 0)
                             <small class="text-danger"><i class="ri-error-warning-line"></i> Total debit dan credit belum balance.</small>
                             @endif
                         </div>

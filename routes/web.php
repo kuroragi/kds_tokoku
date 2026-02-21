@@ -12,6 +12,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\OpnameController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SaldoController;
 use App\Livewire\Coa\CoaList;
 use App\Mail\SendMail;
@@ -164,6 +165,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('stock', [OpnameController::class, 'stockOpnameIndex'])->name('stock-opname.index');
         Route::get('saldo', [OpnameController::class, 'saldoOpnameIndex'])->name('saldo-opname.index');
     });
+
+    // Sales Management
+    Route::prefix('sales')->group(function () {
+        Route::get('/', [SalesController::class, 'salesIndex'])->name('sales.index');
+    });
+
+    // Warehouse Monitor
+    Route::get('warehouse/monitor', function () {
+        return view('pages.warehouse.monitor');
+    })->name('warehouse.monitor');
 });
 
 

@@ -336,61 +336,25 @@
                 <a data-bs-toggle="collapse" href="#sidebarPagesSales" aria-expanded="false"
                     aria-controls="sidebarPagesSales" class="side-nav-link">
                     <i class="bi bi-cart-check"></i>
-                    <span> Sales </span>
+                    <span> Penjualan </span>
                     <span class="menu-arrow"></span>
                 </a>
                 <div class="collapse" id="sidebarPagesSales">
                     <ul class="side-nav-second-level">
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('pos.index') ? 'active' : '' }}"> --}}
-                            <a href="{{ 'javascript:' }}">
-                                {{-- <a href="{{ route('pos.index') ?? 'javascript:' }}"> --}}
-                                    <i class="bi bi-cash-stack me-1"></i> POS (Point of Sales)
-                                </a>
-                        </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('direct-sales.index') ? 'active' : '' }}"> --}}
-                            <a href="{{ 'javascript:' }}">
-                                {{-- <a href="{{ route('direct-sales.index') ?? 'javascript:' }}"> --}}
-                                    <i class="bi bi-cart-dash me-1"></i> Penjualan Langsung
-                                </a>
-                        </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('sales-order.index') ? 'active' : '' }}"> --}}
-                            <a href="{{ 'javascript:' }}">
-                                {{-- <a href="{{ route('sales-order.index') ?? 'javascript:' }}"> --}}
-                                    <i class="bi bi-clipboard-check me-1"></i> Sales Order
-                                </a>
-                        </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('sales-delivery.index') ? 'active' : '' }}"> --}}
-                            <a href="{{ 'javascript:' }}">
-                                {{-- <a href="{{ route('sales-delivery.index') ?? 'javascript:' }}"> --}}
-                                    <i class="bi bi-truck me-1"></i> Pengiriman Barang
-                                </a>
-                        </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('sales-invoice.index') ? 'active' : '' }}"> --}}
-                            <a href="{{ 'javascript:' }}">
-                                {{-- <a href="{{ route('sales-invoice.index') ?? 'javascript:' }}"> --}}
-                                    <i class="bi bi-file-earmark-text me-1"></i> Sales Invoice
-                                </a>
-                        </li>
-                        <li class="">
-                            {{--
-                        <li class="{{ request()->routeIs('sales-payment.index') ? 'active' : '' }}"> --}}
-                            <a href="{{ 'javascript:' }}">
-                                {{-- <a href="{{ route('sales-payment.index') ?? 'javascript:' }}"> --}}
-                                    <i class="bi bi-cash me-1"></i> Sales Payment
-                                </a>
+                        <li class="{{ request()->routeIs('sales.*') ? 'active' : '' }}">
+                            <a href="{{ route('sales.index') }}">
+                                <i class="ri-shopping-bag-line me-1"></i> Penjualan
+                            </a>
                         </li>
                     </ul>
                 </div>
+            </li>
+
+            <li class="side-nav-item">
+                <a href="{{ route('warehouse.monitor') }}" class="side-nav-link {{ request()->routeIs('warehouse.*') ? 'active' : '' }}">
+                    <i class="ri-building-4-line"></i>
+                    <span> Monitor Gudang </span>
+                </a>
             </li>
 
             <li class="side-nav-title">Financial Management</li>

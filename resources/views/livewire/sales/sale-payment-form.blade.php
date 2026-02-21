@@ -14,14 +14,14 @@
                         @if($saleInfo)
                         <div class="alert alert-info py-2 mb-3">
                             <div class="row">
-                                <div class="col-6"><small class="text-muted">No. Invoice</small><div class="fw-semibold">{{ $saleInfo['invoice_number'] }}</div></div>
-                                <div class="col-6"><small class="text-muted">Pelanggan</small><div class="fw-semibold">{{ $saleInfo['customer'] }}</div></div>
+                                <div class="col-6"><small class="text-muted">No. Invoice</small><div class="fw-semibold">{{ $saleInfo->invoice_number }}</div></div>
+                                <div class="col-6"><small class="text-muted">Pelanggan</small><div class="fw-semibold">{{ $saleInfo->customer->name ?? '-' }}</div></div>
                             </div>
                             <hr class="my-2">
                             <div class="row">
-                                <div class="col-4"><small class="text-muted">Total</small><div class="fw-semibold">Rp {{ number_format($saleInfo['grand_total'], 0, ',', '.') }}</div></div>
-                                <div class="col-4"><small class="text-muted">Dibayar</small><div class="fw-semibold text-success">Rp {{ number_format($saleInfo['paid_amount'], 0, ',', '.') }}</div></div>
-                                <div class="col-4"><small class="text-muted">Sisa</small><div class="fw-semibold text-danger">Rp {{ number_format($saleInfo['remaining'], 0, ',', '.') }}</div></div>
+                                <div class="col-4"><small class="text-muted">Total</small><div class="fw-semibold">Rp {{ number_format($saleInfo->grand_total, 0, ',', '.') }}</div></div>
+                                <div class="col-4"><small class="text-muted">Dibayar</small><div class="fw-semibold text-success">Rp {{ number_format($saleInfo->paid_amount, 0, ',', '.') }}</div></div>
+                                <div class="col-4"><small class="text-muted">Sisa</small><div class="fw-semibold text-danger">Rp {{ number_format($saleInfo->remaining_amount, 0, ',', '.') }}</div></div>
                             </div>
                         </div>
                         @endif
@@ -31,7 +31,7 @@
                             <div class="input-group">
                                 <span class="input-group-text">Rp</span>
                                 <input type="number" class="form-control @error('amount') is-invalid @enderror"
-                                    wire:model="amount" min="1" max="{{ $saleInfo['remaining'] ?? 0 }}">
+                                    wire:model="amount" min="1" max="{{ $saleInfo?->remaining_amount ?? 0 }}">
                             </div>
                             @error('amount') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>

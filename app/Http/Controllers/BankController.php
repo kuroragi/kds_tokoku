@@ -18,4 +18,14 @@ class BankController extends Controller
     {
         return view('pages.bank.transfer');
     }
+
+    public function mutationIndex()
+    {
+        return view('pages.bank.mutation');
+    }
+
+    public function reconciliationIndex()
+    {
+        return view('pages.bank.reconciliation');
+    }
 }

@@ -167,4 +167,9 @@ class Purchase extends Model
     {
         return self::PURCHASE_TYPES[$this->purchase_type] ?? $this->purchase_type;
     }
+
+    public function taxInvoices()
+    {
+        return $this->hasMany(TaxInvoice::class);
+    }
 }

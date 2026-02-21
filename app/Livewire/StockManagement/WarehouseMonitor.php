@@ -2,7 +2,6 @@
 
 namespace App\Livewire\StockManagement;
 
-use App\Models\BusinessUnit;
 use App\Models\SaldoProvider;
 use App\Models\Stock;
 use App\Services\BusinessUnitService;
@@ -17,20 +16,17 @@ class WarehouseMonitor extends Component
 
     public function mount()
     {
-        $user = auth()->user();
-        if (!$user->hasRole('super_admin') && $user->business_unit_id) {
-            $this->business_unit_id = $user->business_unit_id;
-        }
+        $this->business_unit_id = BusinessUnitService::getDefaultBusinessUnitId();
     }
 
     public function getIsSuperAdminProperty(): bool
     {
-        return auth()->user()->hasRole('super_admin');
+        return BusinessUnitService::isSuperAdmin();
     }
 
     public function getUnitsProperty()
     {
-        return BusinessUnit::orderBy('code')->get();
+        return BusinessUnitService::getAvailableUnits();
     }
 
     public function getLowStockItemsProperty()

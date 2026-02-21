@@ -13,6 +13,7 @@ use App\Http\Controllers\BankController;
 use App\Http\Controllers\OpnameController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SalesController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SaldoController;
 use App\Livewire\Coa\CoaList;
 use App\Mail\SendMail;
@@ -40,6 +41,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('income-statement', [AccountingController::class, 'incomeStatement'])->name('income-statement');
     Route::get('adjusted-trial-balance', [AccountingController::class, 'adjustedTrialBalance'])->name('adjusted-trial-balance');
     Route::get('tax-closing', [AccountingController::class, 'taxClosing'])->name('tax-closing');
+    Route::get('tax/report', [AccountingController::class, 'taxReport'])->name('tax-report.index');
 
     // Report Pages
     Route::get('report/final-balance-sheet', [AccountingController::class, 'finalBalanceSheet'])->name('report.final-balance-sheet');
@@ -153,6 +155,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [BankController::class, 'bankIndex'])->name('bank.index');
         Route::get('account', [BankController::class, 'accountIndex'])->name('bank-account.index');
         Route::get('transfer', [BankController::class, 'transferIndex'])->name('fund-transfer.index');
+        Route::get('mutation', [BankController::class, 'mutationIndex'])->name('bank-mutation.index');
+        Route::get('reconciliation', [BankController::class, 'reconciliationIndex'])->name('bank-reconciliation.index');
     });
 
     // Purchase Management
@@ -176,6 +180,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('warehouse/monitor', function () {
         return view('pages.warehouse.monitor');
     })->name('warehouse.monitor');
+
+    // Project / Job Order
+    Route::get('project', [ProjectController::class, 'index'])->name('project.index');
 });
 
 

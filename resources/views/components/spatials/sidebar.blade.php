@@ -538,6 +538,11 @@
                                 <i class="ri-government-line me-1"></i> Perpajakan & Closing
                             </a>
                         </li>
+                        <li class="{{ request()->routeIs('tax-report.*') ? 'active' : '' }}">
+                            <a href="{{ route('tax-report.index') }}">
+                                <i class="ri-file-list-3-line me-1"></i> Laporan Pajak
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </li>
@@ -586,8 +591,13 @@
                                 <i class="bi bi-arrow-left-right me-1"></i> Transfer Dana
                             </a>
                         </li>
-                        <li class="">
-                            <a href="javascript:">
+                        <li class="{{ request()->routeIs('bank-mutation.index') ? 'active' : '' }}">
+                            <a href="{{ route('bank-mutation.index') }}">
+                                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Mutasi Bank
+                            </a>
+                        </li>
+                        <li class="{{ request()->routeIs('bank-reconciliation.index') ? 'active' : '' }}">
+                            <a href="{{ route('bank-reconciliation.index') }}">
                                 <i class="bi bi-check2-square me-1"></i> Rekonsiliasi
                             </a>
                         </li>
@@ -595,7 +605,14 @@
                 </div>
             </li>
 
+            <li class="side-nav-title">Project Management</li>
 
+            <li class="side-nav-item">
+                <a href="{{ route('project.index') }}" class="side-nav-link {{ request()->routeIs('project.*') ? 'active' : '' }}">
+                    <i class="bi bi-briefcase"></i>
+                    <span> Proyek / Job Order </span>
+                </a>
+            </li>
 
 
         </ul>

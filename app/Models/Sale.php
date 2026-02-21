@@ -168,4 +168,9 @@ class Sale extends Model
     {
         return self::PAYMENT_STATUSES[$this->payment_status] ?? $this->payment_status;
     }
+
+    public function taxInvoices()
+    {
+        return $this->hasMany(TaxInvoice::class);
+    }
 }

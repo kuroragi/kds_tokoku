@@ -145,6 +145,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('product', [SaldoController::class, 'productIndex'])->name('saldo-product.index');
         Route::get('topup', [SaldoController::class, 'topupIndex'])->name('saldo-topup.index');
         Route::get('transaction', [SaldoController::class, 'transactionIndex'])->name('saldo-transaction.index');
+        Route::get('opening-balance', [SaldoController::class, 'openingBalanceIndex'])->name('opening-balance.index');
     });
 
     // Bank Management

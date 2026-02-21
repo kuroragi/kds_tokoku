@@ -253,9 +253,9 @@ class JournalService
             throw new \Exception('Period not found.');
         }
 
-        // Validate period is not closed (except for system-generated closing/tax journals)
+        // Validate period is not closed (except for system-generated closing/tax/opening journals)
         $type = $data['type'] ?? 'general';
-        if ($period->is_closed && !in_array($type, ['closing', 'tax'])) {
+        if ($period->is_closed && !in_array($type, ['closing', 'tax', 'opening'])) {
             throw new \Exception("Periode '{$period->period_name}' sudah ditutup. Tidak dapat membuat jurnal pada periode ini.");
         }
         
@@ -294,6 +294,7 @@ class JournalService
             'adjustment' => 'AJE',
             'tax' => 'TAX',
             'closing' => 'CLO',
+            'opening' => 'OPN',
         ];
         $prefix = $prefixMap[$type] ?? 'JRN';
         $year = $date->format('Y');

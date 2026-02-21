@@ -97,6 +97,12 @@
                         <li>
                             <a href="javascript:"><i class="ri-time-line"></i> Periode</a>
                         </li>
+
+                        <li class="{{ request()->routeIs('opening-balance.*') ? 'active' : '' }}">
+                            <a href="{{ route('opening-balance.index') }}">
+                                <i class="ri-scales-3-line me-1"></i> Saldo Awal
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </li>

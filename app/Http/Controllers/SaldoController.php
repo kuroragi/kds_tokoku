@@ -23,4 +23,9 @@ class SaldoController extends Controller
     {
         return view('pages.saldo.transaction');
     }
+
+    public function openingBalanceIndex()
+    {
+        return view('pages.saldo.opening-balance');
+    }
 }

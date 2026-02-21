@@ -2,12 +2,12 @@
     {{-- Filter --}}
     <div class="card-body border-bottom py-3">
         <div class="row align-items-end g-3">
-            @if($isSuperAdmin)
+            @if($this->isSuperAdmin)
             <div class="col-md-3">
                 <label class="form-label small mb-1">Unit Usaha</label>
                 <select class="form-select form-select-sm" wire:model.live="business_unit_id">
                     <option value="">-- Semua Unit --</option>
-                    @foreach($units as $unit)
+                    @foreach($this->units as $unit)
                     <option value="{{ $unit->id }}">{{ $unit->code }} — {{ $unit->name }}</option>
                     @endforeach
                 </select>
@@ -34,7 +34,7 @@
                 <div class="card border-0 bg-light">
                     <div class="card-body py-3 text-center">
                         <div class="text-muted small">Total Dipantau</div>
-                        <div class="fw-bold fs-4">{{ $stockSummary['total'] }}</div>
+                        <div class="fw-bold fs-4">{{ $this->stockSummary['total'] }}</div>
                     </div>
                 </div>
             </div>
@@ -42,7 +42,7 @@
                 <div class="card border-0 bg-success bg-opacity-10">
                     <div class="card-body py-3 text-center">
                         <div class="text-muted small">Stok Normal</div>
-                        <div class="fw-bold fs-4 text-success">{{ $stockSummary['normal'] }}</div>
+                        <div class="fw-bold fs-4 text-success">{{ $this->stockSummary['normal'] }}</div>
                     </div>
                 </div>
             </div>
@@ -50,7 +50,7 @@
                 <div class="card border-0 bg-warning bg-opacity-10">
                     <div class="card-body py-3 text-center">
                         <div class="text-muted small">Stok Rendah</div>
-                        <div class="fw-bold fs-4 text-warning">{{ $stockSummary['low'] }}</div>
+                        <div class="fw-bold fs-4 text-warning">{{ $this->stockSummary['low'] }}</div>
                     </div>
                 </div>
             </div>
@@ -58,14 +58,14 @@
                 <div class="card border-0 bg-danger bg-opacity-10">
                     <div class="card-body py-3 text-center">
                         <div class="text-muted small">Stok Habis</div>
-                        <div class="fw-bold fs-4 text-danger">{{ $stockSummary['out_of_stock'] }}</div>
+                        <div class="fw-bold fs-4 text-danger">{{ $this->stockSummary['out_of_stock'] }}</div>
                     </div>
                 </div>
             </div>
         </div>
 
         {{-- Low Stock Table --}}
-        @if($lowStockItems->isEmpty())
+        @if($this->lowStockItems->isEmpty())
         <div class="alert alert-success py-3 text-center">
             <i class="ri-checkbox-circle-line fs-4 me-1"></i>
             Semua stok dalam kondisi aman. Tidak ada barang yang mencapai batas minimum.
@@ -79,7 +79,7 @@
                         <th>Kode</th>
                         <th>Nama Barang</th>
                         <th>Kategori</th>
-                        @if($isSuperAdmin && !$business_unit_id)
+                        @if($this->isSuperAdmin && !$business_unit_id)
                         <th>Unit</th>
                         @endif
                         <th class="text-end">Stok Saat Ini</th>
@@ -89,7 +89,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($lowStockItems as $idx => $stock)
+                    @foreach($this->lowStockItems as $idx => $stock)
                     @php
                         $diff = $stock->current_stock - $stock->min_stock;
                         $isOut = $stock->current_stock <= 0;
@@ -99,7 +99,7 @@
                         <td><span class="badge bg-secondary">{{ $stock->code }}</span></td>
                         <td class="fw-semibold">{{ $stock->name }}</td>
                         <td class="text-muted">{{ $stock->categoryGroup?->name ?? '-' }}</td>
-                        @if($isSuperAdmin && !$business_unit_id)
+                        @if($this->isSuperAdmin && !$business_unit_id)
                         <td><small>{{ $stock->businessUnit?->code }}</small></td>
                         @endif
                         <td class="text-end fw-bold {{ $isOut ? 'text-danger' : 'text-warning' }}">
@@ -131,7 +131,7 @@
                 <div class="card border-0 bg-light">
                     <div class="card-body py-3 text-center">
                         <div class="text-muted small">Total Dipantau</div>
-                        <div class="fw-bold fs-4">{{ $saldoSummary['total'] }}</div>
+                        <div class="fw-bold fs-4">{{ $this->saldoSummary['total'] }}</div>
                     </div>
                 </div>
             </div>
@@ -139,7 +139,7 @@
                 <div class="card border-0 bg-success bg-opacity-10">
                     <div class="card-body py-3 text-center">
                         <div class="text-muted small">Saldo Normal</div>
-                        <div class="fw-bold fs-4 text-success">{{ $saldoSummary['normal'] }}</div>
+                        <div class="fw-bold fs-4 text-success">{{ $this->saldoSummary['normal'] }}</div>
                     </div>
                 </div>
             </div>
@@ -147,13 +147,13 @@
                 <div class="card border-0 bg-warning bg-opacity-10">
                     <div class="card-body py-3 text-center">
                         <div class="text-muted small">Saldo Rendah</div>
-                        <div class="fw-bold fs-4 text-warning">{{ $saldoSummary['low'] }}</div>
+                        <div class="fw-bold fs-4 text-warning">{{ $this->saldoSummary['low'] }}</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        @if($lowBalanceSaldos->isEmpty())
+        @if($this->lowBalanceSaldos->isEmpty())
         <div class="alert alert-success py-3 text-center">
             <i class="ri-checkbox-circle-line fs-4 me-1"></i>
             Semua saldo provider dalam kondisi aman. Tidak ada yang mencapai batas minimum.
@@ -167,7 +167,7 @@
                         <th>Kode</th>
                         <th>Nama Provider</th>
                         <th>Tipe</th>
-                        @if($isSuperAdmin && !$business_unit_id)
+                        @if($this->isSuperAdmin && !$business_unit_id)
                         <th>Unit</th>
                         @endif
                         <th class="text-end">Saldo Saat Ini</th>
@@ -177,7 +177,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($lowBalanceSaldos as $idx => $saldo)
+                    @foreach($this->lowBalanceSaldos as $idx => $saldo)
                     @php
                         $diff = $saldo->current_balance - $saldo->min_balance;
                     @endphp
@@ -186,7 +186,7 @@
                         <td><span class="badge bg-secondary">{{ $saldo->code }}</span></td>
                         <td class="fw-semibold">{{ $saldo->name }}</td>
                         <td class="text-muted">{{ $saldo->type }}</td>
-                        @if($isSuperAdmin && !$business_unit_id)
+                        @if($this->isSuperAdmin && !$business_unit_id)
                         <td><small>{{ $saldo->businessUnit?->code }}</small></td>
                         @endif
                         <td class="text-end fw-bold text-warning">Rp {{ number_format($saldo->current_balance, 0, ',', '.') }}</td>

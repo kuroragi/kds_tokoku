@@ -3,12 +3,12 @@
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-body py-3">
             <div class="row g-2 align-items-end">
-                @if($isSuperAdmin)
+                @if($this->isSuperAdmin)
                 <div class="col-lg-2">
                     <label class="form-label small text-muted mb-1">Unit Usaha</label>
                     <select class="form-select form-select-sm" wire:model.live="filterUnit">
                         <option value="">Semua</option>
-                        @foreach($units as $unit)
+                        @foreach($this->units as $unit)
                         <option value="{{ $unit->id }}">{{ $unit->name }}</option>
                         @endforeach
                     </select>
@@ -18,7 +18,7 @@
                     <label class="form-label small text-muted mb-1">Rekening</label>
                     <select class="form-select form-select-sm" wire:model.live="filterAccount">
                         <option value="">Semua</option>
-                        @foreach($bankAccounts as $acc)
+                        @foreach($this->bankAccounts as $acc)
                         <option value="{{ $acc->id }}">{{ $acc->bank?->name }} - {{ $acc->account_number }}</option>
                         @endforeach
                     </select>
@@ -58,7 +58,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($reconciliations as $idx => $r)
+                    @forelse($this->reconciliations as $idx => $r)
                     <tr wire:key="recon-{{ $r->id }}">
                         <td class="text-muted ps-3">{{ $idx + 1 }}</td>
                         <td>
@@ -140,7 +140,7 @@
                         <label class="form-label">Rekening Bank <span class="text-danger">*</span></label>
                         <select class="form-select @error('create_bank_account_id') is-invalid @enderror" wire:model="create_bank_account_id">
                             <option value="">-- Pilih Rekening --</option>
-                            @foreach($bankAccounts as $acc)
+                            @foreach($this->bankAccounts as $acc)
                             <option value="{{ $acc->id }}">{{ $acc->bank?->name }} - {{ $acc->account_number }} ({{ $acc->account_name }})</option>
                             @endforeach
                         </select>

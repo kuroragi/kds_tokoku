@@ -8,12 +8,12 @@
                     <input type="text" class="form-control form-control-sm" wire:model.live.debounce.300ms="search"
                         placeholder="Deskripsi, referensi...">
                 </div>
-                @if($isSuperAdmin)
+                @if($this->isSuperAdmin)
                 <div class="col-lg-2">
                     <label class="form-label small text-muted mb-1">Unit Usaha</label>
                     <select class="form-select form-select-sm" wire:model.live="filterUnit">
                         <option value="">Semua</option>
-                        @foreach($units as $unit)
+                        @foreach($this->units as $unit)
                         <option value="{{ $unit->id }}">{{ $unit->name }}</option>
                         @endforeach
                     </select>
@@ -23,7 +23,7 @@
                     <label class="form-label small text-muted mb-1">Rekening</label>
                     <select class="form-select form-select-sm" wire:model.live="filterAccount">
                         <option value="">Semua</option>
-                        @foreach($bankAccounts as $acc)
+                        @foreach($this->bankAccounts as $acc)
                         <option value="{{ $acc->id }}">{{ $acc->bank?->name }} - {{ $acc->account_number }}</option>
                         @endforeach
                     </select>
@@ -41,7 +41,7 @@
                     <label class="form-label small text-muted mb-1">Batch</label>
                     <select class="form-select form-select-sm" wire:model.live="filterBatch">
                         <option value="">Semua</option>
-                        @foreach($batches as $batch)
+                        @foreach($this->batches as $batch)
                         <option value="{{ $batch }}">{{ $batch }}</option>
                         @endforeach
                     </select>
@@ -78,9 +78,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($mutations as $idx => $m)
+                    @forelse($this->mutations as $idx => $m)
                     <tr wire:key="mut-{{ $m->id }}">
-                        <td class="text-muted ps-3">{{ $mutations->firstItem() + $idx }}</td>
+                        <td class="text-muted ps-3">{{ $this->mutations->firstItem() + $idx }}</td>
                         <td>{{ $m->transaction_date->format('d/m/Y') }}</td>
                         <td><small>{{ $m->bankAccount?->bank?->name }} {{ $m->bankAccount?->account_number }}</small></td>
                         <td>{{ Str::limit($m->description, 60) }}</td>
@@ -112,9 +112,9 @@
                 </tbody>
             </table>
         </div>
-        @if($mutations->hasPages())
+        @if($this->mutations->hasPages())
         <div class="card-footer bg-white border-0 py-2">
-            {{ $mutations->links() }}
+            {{ $this->mutations->links() }}
         </div>
         @endif
     </div>
@@ -143,7 +143,7 @@
                             <label class="form-label">Rekening Bank <span class="text-danger">*</span></label>
                             <select class="form-select @error('import_bank_account_id') is-invalid @enderror" wire:model="import_bank_account_id">
                                 <option value="">-- Pilih Rekening --</option>
-                                @foreach($bankAccounts as $acc)
+                                @foreach($this->bankAccounts as $acc)
                                 <option value="{{ $acc->id }}">{{ $acc->bank?->name }} - {{ $acc->account_number }} ({{ $acc->account_name }})</option>
                                 @endforeach
                             </select>
@@ -153,7 +153,7 @@
                         <div class="col-md-6">
                             <label class="form-label">Preset Bank</label>
                             <select class="form-select" wire:model.live="import_preset">
-                                @foreach($presets as $key => $preset)
+                                @foreach($this->presets as $key => $preset)
                                 <option value="{{ $key }}">{{ $preset['label'] }}</option>
                                 @endforeach
                             </select>

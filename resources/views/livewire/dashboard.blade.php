@@ -3,12 +3,12 @@
     <div class="row mb-3">
         <div class="col-md-8">
             <div class="d-flex gap-2 align-items-end">
-                @if($isSuperAdmin)
+                @if($this->isSuperAdmin)
                 <div>
                     <label class="form-label small text-muted mb-1">Unit Usaha</label>
                     <select class="form-select form-select-sm" wire:model.live="filterUnit" style="width: 180px;">
                         <option value="">Semua Unit</option>
-                        @foreach($units as $unit)
+                        @foreach($this->units as $unit)
                         <option value="{{ $unit->id }}">{{ $unit->name }}</option>
                         @endforeach
                     </select>

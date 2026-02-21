@@ -8,12 +8,12 @@
                     <input type="text" class="form-control form-control-sm" wire:model.live.debounce.300ms="search"
                         placeholder="Kode / Nama proyek...">
                 </div>
-                @if($isSuperAdmin)
+                @if($this->isSuperAdmin)
                 <div class="col-lg-2">
                     <label class="form-label small text-muted mb-1">Unit Usaha</label>
                     <select class="form-select form-select-sm" wire:model.live="filterUnit">
                         <option value="">Semua</option>
-                        @foreach($units as $unit)
+                        @foreach($this->units as $unit)
                         <option value="{{ $unit->id }}">{{ $unit->name }}</option>
                         @endforeach
                     </select>
@@ -56,9 +56,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($projects as $idx => $p)
+                    @forelse($this->projects as $idx => $p)
                     <tr wire:key="prj-{{ $p->id }}">
-                        <td class="text-muted ps-3">{{ $projects->firstItem() + $idx }}</td>
+                        <td class="text-muted ps-3">{{ $this->projects->firstItem() + $idx }}</td>
                         <td class="fw-semibold">{{ $p->project_code }}</td>
                         <td>
                             {{ $p->name }}
@@ -126,8 +126,8 @@
                 </tbody>
             </table>
         </div>
-        @if($projects->hasPages())
-        <div class="card-footer bg-white border-top px-3 py-2">{{ $projects->links() }}</div>
+        @if($this->projects->hasPages())
+        <div class="card-footer bg-white border-top px-3 py-2">{{ $this->projects->links() }}</div>
         @endif
     </div>
 
@@ -155,7 +155,7 @@
                             <label class="form-label">Customer</label>
                             <select class="form-select" wire:model="customer_id">
                                 <option value="">-- Pilih Customer --</option>
-                                @foreach($customers as $c)
+                                @foreach($this->customers as $c)
                                 <option value="{{ $c->id }}">{{ $c->name }}</option>
                                 @endforeach
                             </select>

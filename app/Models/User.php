@@ -27,6 +27,9 @@ class User extends Authenticatable
         'password',
         'business_unit_id',
         'is_active',
+        'google_id',
+        'avatar',
+        'email_verified_at',
     ];
 
     /**
@@ -62,6 +65,24 @@ class User extends Authenticatable
     public function employee()
     {
         return $this->hasOne(Employee::class);
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function activeSubscription()
+    {
+        return $this->hasOne(Subscription::class)
+            ->where('status', 'active')
+            ->where('ends_at', '>=', now()->toDateString())
+            ->latest('ends_at');
+    }
+
+    public function currentPlan(): ?Plan
+    {
+        return $this->activeSubscription?->plan;
     }
 
     // Scopes

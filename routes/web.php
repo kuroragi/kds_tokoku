@@ -4,10 +4,13 @@ use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\ApArController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\MasterController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\OpnameController;
@@ -15,18 +18,33 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SaldoController;
+use App\Http\Controllers\VoucherController;
 use App\Mail\SendMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('login');
-})->name('login')->middleware('guest');
+// ── Landing & Auth (Guest) ──
+Route::get('/', [LandingController::class, 'index'])->name('landing');
 
-Route::post('authenticate', [AuthController::class, 'authenticate'])->name('authenticate')->middleware('guest');
+Route::middleware('guest')->group(function () {
+    Route::get('login', function () {
+        return view('login');
+    })->name('login');
+
+    Route::post('authenticate', [AuthController::class, 'authenticate'])->name('authenticate');
+    Route::get('register', [RegisterController::class, 'show'])->name('register');
+    Route::post('register', [RegisterController::class, 'store'])->name('register.store');
+});
+
+// ── Google OAuth (accessible for both guest & auth) ──
+Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
+Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [PageController::class, 'dashboard'])->name('dashboard');
+
+    // Voucher Redeem
+    Route::post('voucher/redeem', [VoucherController::class, 'redeem'])->name('voucher.redeem');
 
     // configuration routes
     Route::get('coa', [AccountingController::class, 'coa'])->name('coa');

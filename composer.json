@@ -10,6 +10,7 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "kuroragi/general-helper": "^1.0",
         "laravel/framework": "^12.0",
+        "laravel/socialite": "^5.24",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.7",
         "maatwebsite/excel": "^3.1",

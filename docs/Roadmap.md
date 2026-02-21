@@ -54,7 +54,7 @@ Modul dasar akuntansi yang menjadi tulang punggung seluruh sistem keuangan.
 
 ### 1.6 Periode Akuntansi
 - Model + migration tersedia
-- ⚠️ **Belum ada CRUD UI** — dikelola via seeder/tinker
+- ⏸️ **PENDING** — CRUD UI ditunda, dikelola via seeder/tinker
 
 ---
 
@@ -216,15 +216,17 @@ Modul dasar akuntansi yang menjadi tulang punggung seluruh sistem keuangan.
 | Purchase | PO, Purchase, Payment, Stock Opname, Saldo Opname | ✅ All Complete |
 | Sales | Sale, Payment | ✅ All Complete |
 | Advanced | Dashboard, Project, Opening Balance | ✅ All Complete |
-| Periode | Model only | ⚠️ No CRUD UI |
+| Periode | Model only | ⏸️ Pending |
 
 **Backend ERP READY — siap masuk tahap frontend SaaS.**
 
 ---
 
-## Phase 13 — SaaS Frontend & Pricing 📋 NEXT
+## Phase 13 — SaaS Frontend & Pricing � IN PROGRESS
 
 > Transformasi dari internal ERP menjadi produk SaaS multi-tenant untuk UMKM Indonesia.
+> **Google OAuth Login** — register, beli paket, dan masuk ERP via akun Google.
+> **Voucher System** — generate voucher kode acak untuk testing, paket Medium/Premium, masa aktif 3 bulan.
 
 ### 13.1 Landing Page & Marketing Site
 - Hero section dengan value proposition untuk UMKM

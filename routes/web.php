@@ -200,6 +200,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Project / Job Order
     Route::get('project', [ProjectController::class, 'index'])->name('project.index');
+
+    // Voucher Management
+    Route::get('voucher', function () {
+        return view('pages.voucher.index');
+    })->name('voucher.index');
 });
 
 

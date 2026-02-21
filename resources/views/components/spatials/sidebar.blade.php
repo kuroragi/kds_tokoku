@@ -614,6 +614,15 @@
                 </a>
             </li>
 
+            <li class="side-nav-title">Subscription</li>
+
+            <li class="side-nav-item">
+                <a href="{{ route('voucher.index') }}" class="side-nav-link {{ request()->routeIs('voucher.*') ? 'active' : '' }}">
+                    <i class="ri-coupon-3-line"></i>
+                    <span> Manajemen Voucher </span>
+                </a>
+            </li>
+
 
         </ul>
         <!--- End Sidemenu -->

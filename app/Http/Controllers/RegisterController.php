@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\VerificationMail;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
@@ -45,8 +47,20 @@ class RegisterController extends Controller
                 'is_active' => true,
             ]);
 
-            // Fire Registered event → sends email verification
-            event(new Registered($user));
+            // Build verification details (same pattern as /mail-testing)
+            $verificationUrl = URL::temporarySignedRoute(
+                'verification.verify',
+                now()->addMinutes(60),
+                ['id' => $user->id, 'hash' => sha1($user->getEmailForVerification())]
+            );
+
+            $details = [
+                'subject' => 'Verifikasi Email Anda - TOKOKU',
+                'userName' => $user->name,
+                'verificationUrl' => $verificationUrl,
+            ];
+
+            Mail::to($user->email)->send(new VerificationMail($details));
 
             Auth::login($user);
             request()->session()->regenerate();

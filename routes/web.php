@@ -21,10 +21,12 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SaldoController;
 use App\Http\Controllers\VoucherController;
 use App\Mail\SendMail;
+use App\Mail\VerificationMail;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 
 // ── Landing & Auth (Guest) ──
 Route::get('/', [LandingController::class, 'index'])->name('landing');
@@ -68,7 +70,20 @@ Route::middleware('auth')->group(function () {
     })->middleware('signed')->name('verification.verify');
 
     Route::post('email/verification-notification', function (Request $request) {
-        $request->user()->sendEmailVerificationNotification();
+        $user = $request->user();
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->getEmailForVerification())]
+        );
+
+        $details = [
+            'subject' => 'Verifikasi Email Anda - TOKOKU',
+            'userName' => $user->name,
+            'verificationUrl' => $verificationUrl,
+        ];
+
+        Mail::to($user->email)->send(new VerificationMail($details));
         return back()->with('message', 'Link verifikasi telah dikirim ulang ke email Anda!');
     })->middleware('throttle:6,1')->name('verification.send');
 });
@@ -258,11 +273,25 @@ Route::get('/mail-testing', function() {
     ];
     
     try {
-        $mail = Mail::to('uum1612@gmail.com')->queue(new SendMail($details));
+        Mail::to('uum1612@gmail.com')->send(new SendMail($details));
 
         return 'Mail has been sent!';
     } catch (Exception $e) {
-        // Log the error message
-        return $e->getMessage();
+        return 'ERROR: ' . $e->getMessage();
+    }
+});
+
+Route::get('/mail-verify-testing', function() {
+    $details = [
+        'subject' => 'Verifikasi Email Anda - TOKOKU',
+        'userName' => 'Test User',
+        'verificationUrl' => 'https://example.com/test-verify-link',
+    ];
+
+    try {
+        Mail::to('uum1612@gmail.com')->send(new VerificationMail($details));
+        return 'Verification mail has been sent!';
+    } catch (Exception $e) {
+        return 'ERROR: ' . $e->getMessage();
     }
 });

@@ -123,6 +123,16 @@ class UserForm extends Component
             $user = User::findOrFail($this->userId);
             $user->update($data);
         } else {
+            // Auto-verify team members added by existing users
+            $data['email_verified_at'] = now();
+            $data['skip_email_verification'] = true;
+
+            // Non-superadmin: force same business_unit_id
+            $authUser = auth()->user();
+            if (!$authUser->hasRole('superadmin')) {
+                $data['business_unit_id'] = $authUser->business_unit_id;
+            }
+
             $user = User::create($data);
         }
 
@@ -137,11 +147,21 @@ class UserForm extends Component
 
     public function getRolesProperty()
     {
-        return Role::orderBy('name')->get();
+        $query = Role::orderBy('name');
+        // Non-superadmin can't assign superadmin role
+        if (!auth()->user()->hasRole('superadmin')) {
+            $query->where('name', '!=', 'superadmin');
+        }
+        return $query->get();
     }
 
     public function getUnitsProperty()
     {
+        $user = auth()->user();
+        // Non-superadmin: only their own business unit
+        if (!$user->hasRole('superadmin')) {
+            return BusinessUnit::where('id', $user->business_unit_id)->get();
+        }
         return BusinessUnit::active()->orderBy('name')->get();
     }
 

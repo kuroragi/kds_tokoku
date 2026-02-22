@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
             'username' => 'mysuperadmin',
             'email' => 'superadmin@tokoku.com',
             'password' => bcrypt('@Zaq123qwerty'),
+            'email_verified_at' => now(),
+            'skip_email_verification' => true,
         ])->assignRole('superadmin');
 
         $this->call([
@@ -35,6 +37,7 @@ class DatabaseSeeder extends Seeder
             UnitOfMeasureSeeder::class,
             PositionSeeder::class,
             SystemSettingsSeeder::class,
+            PlanAndVoucherSeeder::class,
         ]);
     } 
 }

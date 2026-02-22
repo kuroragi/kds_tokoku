@@ -2,7 +2,10 @@
 
 namespace App\Livewire;
 
+use App\Mail\SubscriptionActivatedMail;
 use App\Models\Subscription;
+use App\Services\InvoiceService;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -72,6 +75,19 @@ class SubscriptionManagement extends Component
             'ends_at' => now()->addDays($subscription->plan->duration_days)->toDateString(),
         ]);
 
+        // Mark the invoice as paid
+        $invoiceService = app(InvoiceService::class);
+        $invoiceService->markPaid($subscription, 'transfer', $this->paymentReference ?: 'Dikonfirmasi Admin');
+
+        // Send activation email to user
+        try {
+            Mail::to($subscription->user->email)
+                ->send(new SubscriptionActivatedMail($subscription));
+        } catch (\Exception $e) {
+            // Log but don't fail activation
+            \Log::warning('Failed to send activation email: ' . $e->getMessage());
+        }
+
         $this->showActivateModal = false;
         $this->activateId = null;
         $this->paymentReference = '';
@@ -83,6 +99,10 @@ class SubscriptionManagement extends Component
     {
         $subscription = Subscription::findOrFail($id);
         $subscription->update(['status' => 'cancelled']);
+
+        // Cancel related invoice
+        $invoiceService = app(InvoiceService::class);
+        $invoiceService->cancelForSubscription($subscription);
 
         session()->flash('success', "Langganan untuk {$subscription->user->name} dibatalkan.");
     }

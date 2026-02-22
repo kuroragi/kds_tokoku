@@ -22,6 +22,11 @@ class EnsureOnboarded
             return redirect()->route('login');
         }
 
+        // Superadmin bypasses all onboarding checks
+        if ($user->hasRole('superadmin')) {
+            return $next($request);
+        }
+
         // Step 1: Email must be verified
         if (!$user->hasVerifiedEmail()) {
             return redirect()->route('verification.notice');

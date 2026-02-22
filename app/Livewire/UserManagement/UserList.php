@@ -18,7 +18,13 @@ class UserList extends Component
 
     public function getUsersProperty()
     {
+        $authUser = auth()->user();
         $query = User::with(['roles', 'businessUnit']);
+
+        // Non-superadmin: only show users in their business unit
+        if (!$authUser->hasRole('superadmin')) {
+            $query->where('business_unit_id', $authUser->business_unit_id);
+        }
 
         if ($this->search) {
             $query->where(function ($q) {
@@ -45,11 +51,20 @@ class UserList extends Component
 
     public function getRolesProperty()
     {
-        return Role::orderBy('name')->get();
+        $query = Role::orderBy('name');
+        // Non-superadmin can't see/filter by superadmin role
+        if (!auth()->user()->hasRole('superadmin')) {
+            $query->where('name', '!=', 'superadmin');
+        }
+        return $query->get();
     }
 
     public function getUnitsProperty()
     {
+        $user = auth()->user();
+        if (!$user->hasRole('superadmin')) {
+            return BusinessUnit::where('id', $user->business_unit_id)->get();
+        }
         return BusinessUnit::active()->orderBy('name')->get();
     }
 

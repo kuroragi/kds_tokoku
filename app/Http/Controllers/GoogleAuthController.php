@@ -78,6 +78,11 @@ class GoogleAuthController extends Controller
      */
     private function redirectBasedOnState(User $user)
     {
+        // Superadmin bypasses all onboarding checks
+        if ($user->hasRole('superadmin')) {
+            return redirect()->route('dashboard');
+        }
+
         // No subscription → landing page to select plan
         if (!$user->activeSubscription) {
             return redirect()->route('landing');

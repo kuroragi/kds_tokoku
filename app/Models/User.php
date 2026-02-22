@@ -32,6 +32,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at',
         'email_otp',
         'email_otp_expires_at',
+        'skip_email_verification',
     ];
 
     /**
@@ -56,7 +57,20 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_otp_expires_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'skip_email_verification' => 'boolean',
         ];
+    }
+
+    /**
+     * Override: treat user as verified if skip_email_verification is true.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        if ($this->skip_email_verification) {
+            return true;
+        }
+
+        return !is_null($this->email_verified_at);
     }
 
     // Relationships

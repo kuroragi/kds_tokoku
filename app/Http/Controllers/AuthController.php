@@ -19,6 +19,11 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
+        // Superadmin bypasses all onboarding checks
+        if ($user->hasRole('superadmin')) {
+            return redirect()->intended('dashboard');
+        }
+
         // Redirect based on onboarding state
         if (!$user->hasVerifiedEmail()) {
             return redirect()->route('verification.notice');

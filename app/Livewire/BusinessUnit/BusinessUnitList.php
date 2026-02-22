@@ -26,7 +26,13 @@ class BusinessUnitList extends Component
 
     public function getUnitsProperty()
     {
+        $user = auth()->user();
         $query = BusinessUnit::withCount('users');
+
+        // Non-superadmin: only see their own business unit
+        if (!$user->hasRole('superadmin')) {
+            $query->where('id', $user->business_unit_id);
+        }
 
         if ($this->search) {
             $query->where(function ($q) {

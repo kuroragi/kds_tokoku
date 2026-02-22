@@ -173,11 +173,11 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
         // User Management
         Route::get('user', [MasterController::class, 'userIndex'])->name('user.index');
 
-        // Role Management
-        Route::get('role', [MasterController::class, 'roleIndex'])->name('role.index');
-
-        // Permission Management
-        Route::get('permission', [MasterController::class, 'permissionIndex'])->name('permission.index');
+        // Role Management (superadmin only)
+        Route::middleware('role:superadmin')->group(function () {
+            Route::get('role', [MasterController::class, 'roleIndex'])->name('role.index');
+            Route::get('permission', [MasterController::class, 'permissionIndex'])->name('permission.index');
+        });
 
         // Stock Management
         Route::get('stock-category', [MasterController::class, 'stockCategoryIndex'])->name('stock-category.index');
@@ -288,20 +288,22 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     // Project / Job Order
     Route::get('project', [ProjectController::class, 'index'])->name('project.index');
 
-    // Voucher Management
-    Route::get('voucher', function () {
-        return view('pages.voucher.index');
-    })->name('voucher.index');
+    // Voucher Management (superadmin)
+    Route::middleware('role:superadmin')->group(function () {
+        Route::get('voucher', function () {
+            return view('pages.voucher.index');
+        })->name('voucher.index');
 
-    // Subscription Management (superadmin)
-    Route::get('subscription', function () {
-        return view('pages.subscription.index');
-    })->name('subscription.index');
+        // Subscription Management (superadmin)
+        Route::get('subscription', function () {
+            return view('pages.subscription.index');
+        })->name('subscription.index');
 
-    // System Settings (superadmin)
-    Route::get('system-settings', function () {
-        return view('pages.system-settings.index');
-    })->name('system-settings.index');
+        // System Settings (superadmin)
+        Route::get('system-settings', function () {
+            return view('pages.system-settings.index');
+        })->name('system-settings.index');
+    });
 });
 
 

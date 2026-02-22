@@ -26,16 +26,25 @@
         <!--- Sidemenu -->
         <ul class="side-nav">
 
+            {{-- ═══════════════════════════════════════
+                MAIN - Always visible
+            ═══════════════════════════════════════ --}}
             <li class="side-nav-title">Main</li>
 
             <li class="{{ request()->routeIs('dashboard') ? 'active' : '' }} side-nav-item">
                 <a href="{{ route('dashboard') }}" class="side-nav-link">
-                        <i class="ri-dashboard-3-line"></i>
-                        <span class="badge bg-success float-end">9+</span>
-                        <span> Dashboard </span>
-                    </a>
+                    <i class="ri-dashboard-3-line"></i>
+                    <span class="badge bg-success float-end">9+</span>
+                    <span> Dashboard </span>
+                </a>
             </li>
 
+            {{-- ═══════════════════════════════════════
+                MASTER DATA
+                Perusahaan & Sistem: pemilik, admin (always visible for company management)
+                Config Akuntansi: requires 'coa' plan feature
+            ═══════════════════════════════════════ --}}
+            @if(auth()->user()?->hasRole('superadmin') || auth()->user()?->hasAnyRole(['admin', 'pemilik']))
             <li class="side-nav-title">Master Data</li>
 
             <li class="side-nav-item">
@@ -57,6 +66,7 @@
                                 <i class="ri-user-line me-1"></i> User
                             </a>
                         </li>
+                        @role('superadmin')
                         <li class="{{ request()->routeIs('role.*') ? 'active' : '' }}">
                             <a href="{{ route('role.index') }}">
                                 <i class="ri-shield-user-line me-1"></i> Role
@@ -67,6 +77,7 @@
                                 <i class="ri-key-2-line me-1"></i> Permission
                             </a>
                         </li>
+                        @endrole
                         <li class="{{ request()->routeIs('position.*') ? 'active' : '' }}">
                             <a href="{{ route('position.index') }}">
                                 <i class="ri-briefcase-line me-1"></i> Jabatan
@@ -76,36 +87,43 @@
                 </div>
             </li>
 
+            @canAccessMenu('coa', ['admin', 'pemilik'])
             <li class="side-nav-item">
                 <a data-bs-toggle="collapse" href="#sidebarConfigAccounting" aria-expanded="false"
                     aria-controls="sidebarConfigAccounting" class="side-nav-link">
                     <i class="ri-settings-5-line"></i>
-                    <span> Config Ankuntansi </span>
+                    <span> Config Akuntansi </span>
                     <span class="menu-arrow"></span>
                 </a>
                 <div class="collapse" id="sidebarConfigAccounting">
                     <ul class="side-nav-second-level">
-                        <li class="">
-
                         <li class="{{ request()->routeIs('coa') ? 'active' : '' }}">
                             <a href="{{ route('coa') }}">
                                 <i class="ri-file-list-line me-1"></i> Chart of Accounts
                             </a>
                         </li>
-
                         <li>
                             <a href="javascript:"><i class="ri-time-line"></i> Periode</a>
                         </li>
-
+                        @planFeature('opening_balance')
                         <li class="{{ request()->routeIs('opening-balance.*') ? 'active' : '' }}">
                             <a href="{{ route('opening-balance.index') }}">
                                 <i class="ri-scales-3-line me-1"></i> Saldo Awal
                             </a>
                         </li>
+                        @endplanFeature
                     </ul>
                 </div>
             </li>
+            @endcanAccessMenu
+            @endif
 
+            {{-- ═══════════════════════════════════════
+                PRODUCT MANAGEMENT
+                feature: master_data
+                roles: admin, pemilik, kasir
+            ═══════════════════════════════════════ --}}
+            @canAccessMenu('master_data', ['admin', 'pemilik', 'kasir'])
             <li class="side-nav-title">Product Management</li>
 
             <li class="side-nav-item">
@@ -140,7 +158,14 @@
                     </ul>
                 </div>
             </li>
+            @endcanAccessMenu
 
+            {{-- ═══════════════════════════════════════
+                INVENTORY & SALDO
+                feature: saldo
+                roles: admin, pemilik, kasir
+            ═══════════════════════════════════════ --}}
+            @canAccessMenu('saldo', ['admin', 'pemilik', 'kasir'])
             <li class="side-nav-title">Inventory & Saldo</li>
 
             <li class="side-nav-item">
@@ -175,7 +200,14 @@
                     </ul>
                 </div>
             </li>
+            @endcanAccessMenu
 
+            {{-- ═══════════════════════════════════════
+                BUSINESS PARTNERS
+                feature: master_data
+                roles: admin, pemilik, kasir
+            ═══════════════════════════════════════ --}}
+            @canAccessMenu('master_data', ['admin', 'pemilik', 'kasir'])
             <li class="side-nav-title">Business Partners</li>
 
             <li class="side-nav-item">
@@ -210,7 +242,14 @@
                     </ul>
                 </div>
             </li>
+            @endcanAccessMenu
 
+            {{-- ═══════════════════════════════════════
+                ASSET MANAGEMENT
+                feature: asset
+                roles: admin, pemilik
+            ═══════════════════════════════════════ --}}
+            @canAccessMenu('asset', ['admin', 'pemilik'])
             <li class="side-nav-title">Asset Management</li>
 
             <li class="side-nav-item">
@@ -288,9 +327,17 @@
                     </ul>
                 </div>
             </li>
+            @endcanAccessMenu
 
+            {{-- ═══════════════════════════════════════
+                TRANSACTION
+                feature: purchase, sales, stock_opname
+                roles: admin, pemilik, kasir
+            ═══════════════════════════════════════ --}}
+            @if(auth()->user()?->hasRole('superadmin') || app(\App\Services\SubscriptionService::class)->hasFeature(auth()->user(), 'purchase') || app(\App\Services\SubscriptionService::class)->hasFeature(auth()->user(), 'sales'))
             <li class="side-nav-title">Transaction</li>
 
+            @canAccessMenu('purchase', ['admin', 'pemilik', 'kasir'])
             <li class="side-nav-item">
                 <a data-bs-toggle="collapse" href="#sidebarPagesPurchase" aria-expanded="false"
                     aria-controls="sidebarPagesPurchase" class="side-nav-link">
@@ -313,7 +360,9 @@
                     </ul>
                 </div>
             </li>
+            @endcanAccessMenu
 
+            @canAccessMenu('stock_opname', ['admin', 'pemilik'])
             <li class="side-nav-item">
                 <a data-bs-toggle="collapse" href="#sidebarPagesOpname" aria-expanded="false"
                     aria-controls="sidebarPagesOpname" class="side-nav-link">
@@ -336,7 +385,9 @@
                     </ul>
                 </div>
             </li>
+            @endcanAccessMenu
 
+            @canAccessMenu('sales', ['admin', 'pemilik', 'kasir'])
             <li class="side-nav-item">
                 <a data-bs-toggle="collapse" href="#sidebarPagesSales" aria-expanded="false"
                     aria-controls="sidebarPagesSales" class="side-nav-link">
@@ -354,14 +405,24 @@
                     </ul>
                 </div>
             </li>
+            @endcanAccessMenu
 
+            @canAccessMenu('master_data', ['admin', 'pemilik'])
             <li class="side-nav-item">
                 <a href="{{ route('warehouse.monitor') }}" class="side-nav-link {{ request()->routeIs('warehouse.*') ? 'active' : '' }}">
                     <i class="ri-building-4-line"></i>
                     <span> Monitor Gudang </span>
                 </a>
             </li>
+            @endcanAccessMenu
+            @endif
 
+            {{-- ═══════════════════════════════════════
+                FINANCIAL MANAGEMENT
+                feature: ap_ar, employee_loan
+                roles: admin, pemilik
+            ═══════════════════════════════════════ --}}
+            @canAccessMenu('ap_ar', ['admin', 'pemilik'])
             <li class="side-nav-title">Financial Management</li>
 
             <li class="side-nav-item">
@@ -415,6 +476,7 @@
                 </div>
             </li>
 
+            @planFeature('employee_loan')
             <li class="side-nav-item">
                 <a data-bs-toggle="collapse" href="#sidebarPagesLoan" aria-expanded="false"
                     aria-controls="sidebarPagesLoan" class="side-nav-link">
@@ -432,7 +494,15 @@
                     </ul>
                 </div>
             </li>
+            @endplanFeature
+            @endcanAccessMenu
 
+            {{-- ═══════════════════════════════════════
+                PAYROLL
+                feature: payroll
+                roles: admin, pemilik
+            ═══════════════════════════════════════ --}}
+            @canAccessMenu('payroll', ['admin', 'pemilik'])
             <li class="side-nav-title">Payroll</li>
 
             <li class="side-nav-item">
@@ -490,7 +560,14 @@
                     </ul>
                 </div>
             </li>
+            @endcanAccessMenu
 
+            {{-- ═══════════════════════════════════════
+                AKUNTANSI
+                feature: coa, general_ledger, trial_balance, tax
+                roles: admin, pemilik
+            ═══════════════════════════════════════ --}}
+            @canAccessMenu('coa', ['admin', 'pemilik'])
             <li class="side-nav-item">
                 <a data-bs-toggle="collapse" href="#sidebarPagesAccounting" aria-expanded="false"
                     aria-controls="sidebarPagesAccounting" class="side-nav-link">
@@ -500,18 +577,19 @@
                 </a>
                 <div class="collapse" id="sidebarPagesAccounting">
                     <ul class="side-nav-second-level">
-                        <li class="">
-
                         <li class="{{ request()->routeIs('journal') ? 'active' : '' }}">
                             <a href="{{ route('journal') }}">
                                 <i class="ri-file-list-3-line me-1"></i> Jurnal
                             </a>
                         </li>
+                        @planFeature('general_ledger')
                         <li class="{{ request()->routeIs('general-ledger') ? 'active' : '' }}">
                             <a href="{{ route('general-ledger') }}">
                                 <i class="ri-book-open-line me-1"></i> Buku Besar
                             </a>
                         </li>
+                        @endplanFeature
+                        @planFeature('trial_balance')
                         <li class="{{ request()->routeIs('trial-balance') ? 'active' : '' }}">
                             <a href="{{ route('trial-balance') }}">
                                 <i class="ri-scales-3-line me-1"></i> Neraca Saldo
@@ -522,6 +600,7 @@
                                 <i class="ri-line-chart-line me-1"></i> Laba Rugi
                             </a>
                         </li>
+                        @endplanFeature
                         <li class="{{ request()->routeIs('adjustment-journal') ? 'active' : '' }}">
                             <a href="{{ route('adjustment-journal') }}">
                                 <i class="ri-file-edit-line me-1"></i> Jurnal Penyesuaian
@@ -532,6 +611,7 @@
                                 <i class="ri-file-edit-line me-1"></i> Neraca Penyesuaian
                             </a>
                         </li>
+                        @planFeature('tax')
                         <li class="{{ request()->routeIs('tax-closing') ? 'active' : '' }}">
                             <a href="{{ route('tax-closing') }}">
                                 <i class="ri-government-line me-1"></i> Perpajakan & Closing
@@ -542,10 +622,12 @@
                                 <i class="ri-file-list-3-line me-1"></i> Laporan Pajak
                             </a>
                         </li>
+                        @endplanFeature
                     </ul>
                 </div>
             </li>
 
+            @planFeature('trial_balance')
             <li class="side-nav-item">
                 <a data-bs-toggle="collapse" href="#sidebarPagesReports" aria-expanded="false"
                     aria-controls="sidebarPagesReports" class="side-nav-link">
@@ -563,7 +645,15 @@
                     </ul>
                 </div>
             </li>
+            @endplanFeature
+            @endcanAccessMenu
 
+            {{-- ═══════════════════════════════════════
+                BANKING & RECONCILIATION
+                feature: bank, bank_reconciliation
+                roles: admin, pemilik
+            ═══════════════════════════════════════ --}}
+            @canAccessMenu('bank', ['admin', 'pemilik'])
             <li class="side-nav-title">Banking & Reconciliation</li>
 
             <li class="side-nav-item">
@@ -595,15 +685,24 @@
                                 <i class="bi bi-file-earmark-spreadsheet me-1"></i> Mutasi Bank
                             </a>
                         </li>
+                        @planFeature('bank_reconciliation')
                         <li class="{{ request()->routeIs('bank-reconciliation.index') ? 'active' : '' }}">
                             <a href="{{ route('bank-reconciliation.index') }}">
                                 <i class="bi bi-check2-square me-1"></i> Rekonsiliasi
                             </a>
                         </li>
+                        @endplanFeature
                     </ul>
                 </div>
             </li>
+            @endcanAccessMenu
 
+            {{-- ═══════════════════════════════════════
+                PROJECT MANAGEMENT
+                feature: project
+                roles: admin, pemilik
+            ═══════════════════════════════════════ --}}
+            @canAccessMenu('project', ['admin', 'pemilik'])
             <li class="side-nav-title">Project Management</li>
 
             <li class="side-nav-item">
@@ -612,7 +711,12 @@
                     <span> Proyek / Job Order </span>
                 </a>
             </li>
+            @endcanAccessMenu
 
+            {{-- ═══════════════════════════════════════
+                SUBSCRIPTION (Superadmin only)
+            ═══════════════════════════════════════ --}}
+            @role('superadmin')
             <li class="side-nav-title">Subscription</li>
 
             <li class="side-nav-item">
@@ -635,7 +739,7 @@
                     <span> Pengaturan Sistem </span>
                 </a>
             </li>
-
+            @endrole
 
         </ul>
         <!--- End Sidemenu -->

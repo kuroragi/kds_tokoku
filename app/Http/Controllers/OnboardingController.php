@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\BusinessUnit;
+use App\Models\Invoice;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Services\InvoiceService;
 use App\Services\SubscriptionService;
 use App\Services\VoucherService;
 use Illuminate\Http\Request;
@@ -44,7 +46,7 @@ class OnboardingController extends Controller
                 ->with('success', "Paket {$plan->name} berhasil diaktifkan! Sekarang buat instansi bisnis Anda.");
         }
 
-        // Paid plan → create pending subscription
+        // Paid plan → create pending subscription + invoice
         // Cancel any existing pending subscription first
         $user->subscriptions()->where('status', 'pending')->update(['status' => 'cancelled']);
 
@@ -57,6 +59,10 @@ class OnboardingController extends Controller
             'amount_paid' => $plan->price,
             'payment_method' => 'transfer',
         ]);
+
+        // Generate invoice
+        $invoiceService = app(InvoiceService::class);
+        $invoiceService->createForSubscription($subscription);
 
         return redirect()->route('onboarding.payment', ['subscription' => $subscription->id]);
     }
@@ -75,12 +81,20 @@ class OnboardingController extends Controller
 
         // If already active, skip to next step
         if ($subscription->status === 'active') {
-            return redirect()->route('onboarding.setup-instance');
+            if (!$user->business_unit_id) {
+                return redirect()->route('onboarding.setup-instance')
+                    ->with('success', 'Pembayaran Anda telah dikonfirmasi! Silakan buat instansi bisnis Anda.');
+            }
+            return redirect()->route('dashboard');
         }
 
         $subscription->load('plan');
 
-        return view('onboarding.payment', compact('subscription'));
+        // Get invoice for this subscription
+        $invoiceService = app(InvoiceService::class);
+        $invoice = $invoiceService->getUnpaidInvoice($subscription);
+
+        return view('onboarding.payment', compact('subscription', 'invoice'));
     }
 
     /**

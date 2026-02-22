@@ -22,39 +22,18 @@
             padding: 30px;
         }
         .plan-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(255,255,255,0.2);
-            padding: 6px 14px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.2); padding: 6px 14px;
+            border-radius: 50px; font-size: 0.85rem; font-weight: 600;
         }
-        .step-indicator {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 30px;
-        }
-        .step {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-            color: #94a3b8;
-        }
+        .step-indicator { display: flex; justify-content: center; gap: 12px; margin-bottom: 30px; }
+        .step { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; }
         .step.completed { color: #0acf97; }
         .step.active { color: #3e60d5; font-weight: 600; }
         .step-dot {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.75rem;
+            width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.75rem;
         }
         .step.completed .step-dot { background: #0acf97; color: #fff; }
         .step.active .step-dot { background: #3e60d5; color: #fff; }
@@ -62,33 +41,33 @@
         .step-line { width: 40px; height: 2px; background: #e2e8f0; align-self: center; }
         .step-line.completed { background: #0acf97; }
         .bank-card {
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 16px;
-            transition: all 0.2s;
-            cursor: pointer;
+            border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px;
+            transition: all 0.2s; cursor: pointer;
         }
         .bank-card:hover { border-color: #3e60d5; background: #f8f9fe; }
-        .bank-card.selected { border-color: #3e60d5; background: #f0f3ff; }
         .copy-btn {
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 4px 12px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
+            background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px;
+            padding: 4px 12px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
         }
         .copy-btn:hover { background: #e2e8f0; }
         .status-pending {
             background: linear-gradient(135deg, #fef3c7, #fde68a);
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 12px; padding: 20px;
         }
-        .amount-display {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #1e293b;
+        .invoice-box {
+            border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden;
+        }
+        .invoice-header {
+            background: #f8fafc; padding: 16px 20px; border-bottom: 2px solid #e2e8f0;
+        }
+        .invoice-body { padding: 20px; }
+        .invoice-footer {
+            background: #f1f5f9; padding: 16px 20px; border-top: 2px dashed #e2e8f0;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .invoice-box { border: 1px solid #333; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
 </head>
@@ -100,8 +79,7 @@
                 <a href="{{ route('landing') }}" class="brand-logo">TOKO<span>KU</span></a>
             </div>
 
-            <div class="col-12">
-                <!-- Step Indicator -->
+            <div class="col-12 no-print">
                 <div class="step-indicator">
                     <div class="step completed">
                         <div class="step-dot"><i class="ri-check-line"></i></div>
@@ -132,7 +110,6 @@
 
             <div class="col-lg-8">
                 <div class="card border-0 shadow-lg overflow-hidden" style="border-radius: 16px;">
-                    <!-- Header -->
                     <div class="payment-header">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
@@ -150,9 +127,7 @@
                         <!-- Status Pending -->
                         <div class="status-pending mb-4">
                             <div class="d-flex align-items-center gap-3">
-                                <div>
-                                    <i class="ri-time-line" style="font-size: 2.5rem; color: #f59e0b;"></i>
-                                </div>
+                                <i class="ri-time-line" style="font-size: 2.5rem; color: #f59e0b;"></i>
                                 <div class="flex-grow-1">
                                     <h5 class="mb-1 fw-bold">Menunggu Pembayaran</h5>
                                     <p class="mb-0 text-muted">Lakukan pembayaran sesuai instruksi di bawah, lalu hubungi admin untuk konfirmasi.</p>
@@ -160,7 +135,107 @@
                             </div>
                         </div>
 
-                        <!-- Order Summary -->
+                        {{-- ═══ INVOICE ═══ --}}
+                        @if($invoice)
+                        <div class="invoice-box mb-4" id="invoice-area">
+                            <div class="invoice-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-0 fw-bold"><i class="ri-bill-line text-primary me-2"></i>Invoice</h5>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold text-primary">{{ $invoice->invoice_number }}</div>
+                                    <div class="text-muted small">
+                                        @if($invoice->isOverdue())
+                                            <span class="badge bg-danger">Jatuh Tempo</span>
+                                        @else
+                                            <span class="badge bg-warning-subtle text-warning">Belum Dibayar</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="invoice-body">
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <div class="text-muted small">Tanggal Terbit</div>
+                                        <div class="fw-semibold">{{ $invoice->issued_at->format('d F Y') }}</div>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <div class="text-muted small">Jatuh Tempo</div>
+                                        <div class="fw-semibold {{ $invoice->isOverdue() ? 'text-danger' : '' }}">
+                                            {{ $invoice->due_at->format('d F Y') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <div class="text-muted small">Ditagihkan Kepada</div>
+                                        <div class="fw-semibold">{{ auth()->user()->name }}</div>
+                                        <div class="text-muted small">{{ auth()->user()->email }}</div>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <div class="text-muted small">Dari</div>
+                                        <div class="fw-semibold">PT Kuroragi Digital Indonesia</div>
+                                        <div class="text-muted small">TOKOKU ERP</div>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Deskripsi</th>
+                                                <th class="text-center">Durasi</th>
+                                                <th class="text-end">Harga</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-semibold">Paket {{ $invoice->plan_name }}</div>
+                                                    <div class="text-muted small">
+                                                        Max {{ $subscription->plan->max_users ?: '∞' }} User,
+                                                        Max {{ $subscription->plan->max_business_units ?: '∞' }} Unit Usaha
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">{{ $invoice->duration_days }} Hari</td>
+                                                <td class="text-end">Rp {{ number_format($invoice->plan_price, 0, ',', '.') }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="invoice-footer">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-muted">Subtotal</span>
+                                    <span>Rp {{ number_format($invoice->subtotal, 0, ',', '.') }}</span>
+                                </div>
+                                @if($invoice->discount > 0)
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-muted">Diskon</span>
+                                    <span class="text-success">- Rp {{ number_format($invoice->discount, 0, ',', '.') }}</span>
+                                </div>
+                                @endif
+                                @if($invoice->tax > 0)
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-muted">Pajak</span>
+                                    <span>Rp {{ number_format($invoice->tax, 0, ',', '.') }}</span>
+                                </div>
+                                @endif
+                                <hr class="my-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold fs-5">Total</span>
+                                    <span class="fw-bold fs-5 text-primary">Rp {{ number_format($invoice->total, 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 mb-4 no-print">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.print()">
+                                <i class="ri-printer-line me-1"></i> Cetak Invoice
+                            </button>
+                        </div>
+                        @else
+                        {{-- Fallback if no invoice --}}
                         <div class="mb-4">
                             <h5 class="fw-bold mb-3"><i class="ri-file-list-3-line text-primary me-2"></i>Ringkasan Pesanan</h5>
                             <div class="table-responsive">
@@ -173,30 +248,20 @@
                                         <td class="text-muted">Durasi</td>
                                         <td class="text-end fw-semibold">{{ $subscription->plan->duration_days }} Hari</td>
                                     </tr>
-                                    <tr>
-                                        <td class="text-muted">Max User</td>
-                                        <td class="text-end fw-semibold">{{ $subscription->plan->max_users ?: 'Unlimited' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted">Max Unit Usaha</td>
-                                        <td class="text-end fw-semibold">{{ $subscription->plan->max_business_units ?: 'Unlimited' }}</td>
-                                    </tr>
                                     <tr class="border-top">
-                                        <td class="fw-bold fs-5">Total Pembayaran</td>
-                                        <td class="text-end">
-                                            <span class="amount-display text-primary">Rp {{ number_format($subscription->amount_paid, 0, ',', '.') }}</span>
-                                        </td>
+                                        <td class="fw-bold fs-5">Total</td>
+                                        <td class="text-end fw-bold fs-4 text-primary">Rp {{ number_format($subscription->amount_paid, 0, ',', '.') }}</td>
                                     </tr>
                                 </table>
                             </div>
                         </div>
+                        @endif
 
                         <!-- Bank Transfer Info -->
-                        <div class="mb-4">
+                        <div class="mb-4 no-print">
                             <h5 class="fw-bold mb-3"><i class="ri-bank-line text-primary me-2"></i>Transfer ke Rekening</h5>
 
                             <div class="row g-3">
-                                <!-- BCA -->
                                 <div class="col-md-6">
                                     <div class="bank-card">
                                         <div class="d-flex align-items-center gap-2 mb-2">
@@ -208,14 +273,12 @@
                                                 <div class="fw-bold fs-5" id="bca-number">1234567890</div>
                                                 <div class="text-muted small">a.n. PT Kuroragi Digital Indonesia</div>
                                             </div>
-                                            <button type="button" class="copy-btn" onclick="copyToClipboard('bca-number', this)">
+                                            <button type="button" class="copy-btn" onclick="copyText('1234567890', this)">
                                                 <i class="ri-file-copy-line"></i> Salin
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Mandiri -->
                                 <div class="col-md-6">
                                     <div class="bank-card">
                                         <div class="d-flex align-items-center gap-2 mb-2">
@@ -227,7 +290,7 @@
                                                 <div class="fw-bold fs-5" id="mandiri-number">0987654321</div>
                                                 <div class="text-muted small">a.n. PT Kuroragi Digital Indonesia</div>
                                             </div>
-                                            <button type="button" class="copy-btn" onclick="copyToClipboard('mandiri-number', this)">
+                                            <button type="button" class="copy-btn" onclick="copyText('0987654321', this)">
                                                 <i class="ri-file-copy-line"></i> Salin
                                             </button>
                                         </div>
@@ -237,23 +300,23 @@
                         </div>
 
                         <!-- Amount to transfer -->
-                        <div class="mb-4">
+                        @php $payTotal = $invoice ? $invoice->total : $subscription->amount_paid; @endphp
+                        <div class="mb-4 no-print">
                             <h5 class="fw-bold mb-3"><i class="ri-money-dollar-circle-line text-primary me-2"></i>Nominal Transfer</h5>
                             <div class="bg-light rounded-3 p-3 d-flex align-items-center justify-content-between">
-                                <span class="fw-bold fs-4" id="transfer-amount">Rp {{ number_format($subscription->amount_paid, 0, ',', '.') }}</span>
-                                <button type="button" class="copy-btn" onclick="copyToClipboard('transfer-amount-raw', this)">
+                                <span class="fw-bold fs-4">Rp {{ number_format($payTotal, 0, ',', '.') }}</span>
+                                <button type="button" class="copy-btn" onclick="copyText('{{ (int) $payTotal }}', this)">
                                     <i class="ri-file-copy-line"></i> Salin Nominal
                                 </button>
-                                <input type="hidden" id="transfer-amount-raw" value="{{ (int) $subscription->amount_paid }}">
                             </div>
                             <p class="text-muted small mt-2">
                                 <i class="ri-information-line me-1"></i>
-                                Transfer sesuai nominal di atas agar pembayaran dapat diverifikasi otomatis.
+                                Transfer sesuai nominal di atas agar pembayaran dapat diverifikasi.
                             </p>
                         </div>
 
                         <!-- Confirmation Steps -->
-                        <div class="mb-4">
+                        <div class="mb-4 no-print">
                             <h5 class="fw-bold mb-3"><i class="ri-list-check-2 text-primary me-2"></i>Langkah Konfirmasi</h5>
                             <div class="d-flex flex-column gap-2">
                                 <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
@@ -267,7 +330,7 @@
                                     <span class="badge bg-primary rounded-circle" style="width: 28px; height: 28px; line-height: 20px;">2</span>
                                     <div>
                                         <div class="fw-semibold">Hubungi admin via WhatsApp untuk konfirmasi</div>
-                                        <div class="text-muted small">Kirim bukti transfer beserta email akun Anda</div>
+                                        <div class="text-muted small">Kirim bukti transfer beserta nomor invoice <strong>{{ $invoice?->invoice_number ?? '-' }}</strong></div>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
@@ -280,16 +343,30 @@
                             </div>
                         </div>
 
+                        <!-- Cek Status Pembayaran -->
+                        <div class="d-grid gap-2 mb-3 no-print">
+                            <a href="{{ route('onboarding.payment', ['subscription' => $subscription->id]) }}"
+                               class="btn btn-outline-primary btn-lg">
+                                <i class="ri-refresh-line me-2"></i> Cek Status Pembayaran
+                            </a>
+                        </div>
+
                         <!-- WhatsApp Button -->
-                        <div class="d-grid gap-2 mb-3">
-                            <a href="https://wa.me/6281234567890?text={{ urlencode('Halo Admin TOKOKU, saya ingin konfirmasi pembayaran paket ' . $subscription->plan->name . ' (Rp ' . number_format($subscription->amount_paid, 0, ',', '.') . '). Email: ' . auth()->user()->email) }}"
-                               target="_blank"
-                               class="btn btn-success btn-lg">
+                        <div class="d-grid gap-2 mb-3 no-print">
+                            @php
+                                $waMsg = "Halo Admin TOKOKU, saya ingin konfirmasi pembayaran:\n"
+                                    . "Invoice: " . ($invoice?->invoice_number ?? '-') . "\n"
+                                    . "Paket: " . $subscription->plan->name . "\n"
+                                    . "Total: Rp " . number_format($payTotal, 0, ',', '.') . "\n"
+                                    . "Email: " . auth()->user()->email;
+                            @endphp
+                            <a href="https://wa.me/6281234567890?text={{ urlencode($waMsg) }}"
+                               target="_blank" class="btn btn-success btn-lg">
                                 <i class="ri-whatsapp-line me-2"></i> Konfirmasi via WhatsApp
                             </a>
                         </div>
 
-                        <div class="text-center">
+                        <div class="text-center no-print">
                             <p class="text-muted small mb-2">Sudah punya voucher? Gunakan di halaman utama.</p>
                             <a href="{{ route('landing') }}" class="btn btn-outline-secondary btn-sm">
                                 <i class="ri-arrow-left-line me-1"></i> Kembali ke Halaman Utama
@@ -298,8 +375,7 @@
                     </div>
                 </div>
 
-                <!-- Info Card -->
-                <div class="card border-0 shadow-sm mt-3" style="border-radius: 12px;">
+                <div class="card border-0 shadow-sm mt-3 no-print" style="border-radius: 12px;">
                     <div class="card-body py-3">
                         <div class="d-flex align-items-center gap-2">
                             <i class="ri-shield-check-line text-success fs-4"></i>
@@ -317,19 +393,12 @@
     <script src="/assets/js/vendor.min.js"></script>
     <script src="/assets/js/app.min.js"></script>
     <script>
-        function copyToClipboard(elementId, btn) {
-            const el = document.getElementById(elementId);
-            let text = el.value || el.textContent;
-            text = text.replace(/[^0-9]/g, '') || el.textContent.trim();
-
+        function copyText(text, btn) {
             navigator.clipboard.writeText(text).then(() => {
-                const originalHtml = btn.innerHTML;
+                const orig = btn.innerHTML;
                 btn.innerHTML = '<i class="ri-check-line"></i> Tersalin!';
                 btn.classList.add('text-success');
-                setTimeout(() => {
-                    btn.innerHTML = originalHtml;
-                    btn.classList.remove('text-success');
-                }, 2000);
+                setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('text-success'); }, 2000);
             });
         }
     </script>

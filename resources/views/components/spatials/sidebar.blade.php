@@ -622,6 +622,20 @@
                 </a>
             </li>
 
+            <li class="side-nav-item">
+                <a href="{{ route('subscription.index') }}" class="side-nav-link {{ request()->routeIs('subscription.*') ? 'active' : '' }}">
+                    <i class="ri-vip-crown-line"></i>
+                    <span> Manajemen Langganan </span>
+                </a>
+            </li>
+
+            <li class="side-nav-item">
+                <a href="{{ route('system-settings.index') }}" class="side-nav-link {{ request()->routeIs('system-settings.*') ? 'active' : '' }}">
+                    <i class="ri-settings-5-line"></i>
+                    <span> Pengaturan Sistem </span>
+                </a>
+            </li>
+
 
         </ul>
         <!--- End Sidemenu -->

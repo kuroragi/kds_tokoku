@@ -51,6 +51,7 @@ class JournalService
             
             // Create journal master
             $journalMaster = JournalMaster::create([
+                'business_unit_id' => $data['business_unit_id'] ?? \App\Services\BusinessUnitService::getUserBusinessUnitId(),
                 'type' => $type,
                 'journal_no' => $journalNo,
                 'journal_date' => $data['journal_date'],

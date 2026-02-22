@@ -733,6 +733,10 @@
                                     <a href="{{ route('dashboard') }}" class="btn btn-success w-100">
                                         <i class="ri-dashboard-line me-1"></i> Dashboard
                                     </a>
+                                @elseif(auth()->user()->pendingSubscription)
+                                    <a href="{{ route('onboarding.payment', auth()->user()->pendingSubscription) }}" class="btn btn-warning w-100">
+                                        <i class="ri-time-line me-1"></i> Menunggu Pembayaran
+                                    </a>
                                 @else
                                     <form action="{{ route('onboarding.subscribe') }}" method="POST">
                                         @csrf

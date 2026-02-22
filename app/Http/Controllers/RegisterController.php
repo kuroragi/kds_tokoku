@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\VerificationMail;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,7 +48,25 @@ class RegisterController extends Controller
                 'is_active' => true,
             ]);
 
-            // Build verification details (same pattern as /mail-testing)
+            // Send verification email based on system setting
+            self::sendVerificationEmail($user);
+
+            Auth::login($user);
+            request()->session()->regenerate();
+
+            return redirect()->route('verification.notice')
+                ->with('success', 'Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.');
+        });
+    }
+
+    /**
+     * Send verification email based on system setting (OTP or URL).
+     */
+    public static function sendVerificationEmail(User $user): void
+    {
+        $mode = SystemSetting::get('verification_method', 'otp');
+
+        if ($mode === 'url') {
             $verificationUrl = URL::temporarySignedRoute(
                 'verification.verify',
                 now()->addMinutes(60),
@@ -57,16 +76,27 @@ class RegisterController extends Controller
             $details = [
                 'subject' => 'Verifikasi Email Anda - TOKOKU',
                 'userName' => $user->name,
+                'mode' => 'url',
                 'verificationUrl' => $verificationUrl,
             ];
+        } else {
+            // Generate 6-digit OTP
+            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $expiryMinutes = (int) SystemSetting::get('otp_expiry_minutes', '15');
 
-            Mail::to($user->email)->send(new VerificationMail($details));
+            $user->update([
+                'email_otp' => $otp,
+                'email_otp_expires_at' => now()->addMinutes($expiryMinutes),
+            ]);
 
-            Auth::login($user);
-            request()->session()->regenerate();
+            $details = [
+                'subject' => 'Kode Verifikasi Anda - TOKOKU',
+                'userName' => $user->name,
+                'mode' => 'otp',
+                'otpCode' => $otp,
+            ];
+        }
 
-            return redirect()->route('verification.notice')
-                ->with('success', 'Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.');
-        });
+        Mail::to($user->email)->send(new VerificationMail($details));
     }
 }

@@ -29,6 +29,12 @@ class EnsureOnboarded
 
         // Step 2: Must have an active subscription
         if (!$user->activeSubscription) {
+            // Check if has pending payment
+            $pending = $user->pendingSubscription;
+            if ($pending) {
+                return redirect()->route('onboarding.payment', ['subscription' => $pending->id]);
+            }
+
             return redirect()->route('landing')
                 ->with('info', 'Silakan pilih paket terlebih dahulu.');
         }

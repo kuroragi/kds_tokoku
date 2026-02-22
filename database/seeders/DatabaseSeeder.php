@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             BusinessUnitSeeder::class,
             UnitOfMeasureSeeder::class,
             PositionSeeder::class,
+            SystemSettingsSeeder::class,
         ]);
     } 
 }

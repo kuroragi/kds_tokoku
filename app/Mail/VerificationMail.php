@@ -16,6 +16,13 @@ class VerificationMail extends Mailable
 
     /**
      * Create a new message instance.
+     * 
+     * $details should contain:
+     * - subject: Email subject
+     * - userName: User name
+     * - mode: 'otp' or 'url'
+     * - otpCode: (for OTP mode) 6-digit code
+     * - verificationUrl: (for URL mode) Signed verification URL
      */
     public function __construct($details)
     {
@@ -37,11 +44,23 @@ class VerificationMail extends Mailable
      */
     public function content(): Content
     {
+        $mode = $this->details['mode'] ?? 'otp';
+
+        if ($mode === 'url') {
+            return new Content(
+                view: 'mails.verify-email',
+                with: [
+                    'userName' => $this->details['userName'],
+                    'verificationUrl' => $this->details['verificationUrl'],
+                ],
+            );
+        }
+
         return new Content(
-            view: 'mails.verify-email',
+            view: 'mails.verify-otp',
             with: [
                 'userName' => $this->details['userName'],
-                'verificationUrl' => $this->details['verificationUrl'],
+                'otpCode' => $this->details['otpCode'],
             ],
         );
     }

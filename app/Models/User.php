@@ -30,6 +30,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'google_id',
         'avatar',
         'email_verified_at',
+        'email_otp',
+        'email_otp_expires_at',
     ];
 
     /**
@@ -51,6 +53,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'email_otp_expires_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
@@ -78,6 +81,13 @@ class User extends Authenticatable implements MustVerifyEmail
             ->where('status', 'active')
             ->where('ends_at', '>=', now()->toDateString())
             ->latest('ends_at');
+    }
+
+    public function pendingSubscription()
+    {
+        return $this->hasOne(Subscription::class)
+            ->where('status', 'pending')
+            ->latest();
     }
 
     public function currentPlan(): ?Plan

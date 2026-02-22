@@ -12,6 +12,7 @@ class JournalMaster extends Model
     use HasFactory, SoftDeletes, Blameable;
 
     protected $fillable = [
+        'business_unit_id',
         'type',
         'id_period',
         'journal_no',
@@ -32,6 +33,11 @@ class JournalMaster extends Model
     ];
 
     // Relationships
+    public function businessUnit()
+    {
+        return $this->belongsTo(BusinessUnit::class);
+    }
+
     public function period()
     {
         return $this->belongsTo(Period::class, 'id_period');

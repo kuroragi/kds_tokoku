@@ -74,6 +74,11 @@ class Subscription extends Model
             && $this->ends_at->addDays(3)->isFuture();
     }
 
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
     public function daysRemaining(): int
     {
         return max(0, now()->diffInDays($this->ends_at, false));

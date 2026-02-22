@@ -51,12 +51,12 @@ Route::middleware('auth')->group(function () {
         return view('auth.verify-email');
     })->name('verification.notice');
 
+    // URL-based verification (kept for URL mode)
     Route::get('email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
         $request->fulfill();
 
         $user = $request->user();
 
-        // After verification → redirect based on onboarding state
         if (!$user->activeSubscription) {
             return redirect()->route('landing')
                 ->with('success', 'Email berhasil diverifikasi! Silakan pilih paket untuk memulai.');
@@ -69,22 +69,50 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('dashboard');
     })->middleware('signed')->name('verification.verify');
 
-    Route::post('email/verification-notification', function (Request $request) {
+    // OTP-based verification
+    Route::post('email/verify-otp', function (Request $request) {
+        $request->validate([
+            'otp'   => 'required|array|size:6',
+            'otp.*' => 'required|string|size:1',
+        ]);
+
+        $otp = implode('', $request->otp);
         $user = $request->user();
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            ['id' => $user->id, 'hash' => sha1($user->getEmailForVerification())]
-        );
 
-        $details = [
-            'subject' => 'Verifikasi Email Anda - TOKOKU',
-            'userName' => $user->name,
-            'verificationUrl' => $verificationUrl,
-        ];
+        if (!$user->email_otp || !$user->email_otp_expires_at) {
+            return back()->withErrors(['otp' => 'Kode OTP tidak ditemukan. Silakan kirim ulang.']);
+        }
 
-        Mail::to($user->email)->send(new VerificationMail($details));
-        return back()->with('message', 'Link verifikasi telah dikirim ulang ke email Anda!');
+        if (now()->greaterThan($user->email_otp_expires_at)) {
+            return back()->withErrors(['otp' => 'Kode OTP telah kedaluwarsa. Silakan kirim ulang.']);
+        }
+
+        if ($user->email_otp !== $otp) {
+            return back()->withErrors(['otp' => 'Kode OTP tidak valid. Silakan coba lagi.']);
+        }
+
+        // OTP valid — mark email as verified
+        $user->email_verified_at = now();
+        $user->email_otp = null;
+        $user->email_otp_expires_at = null;
+        $user->save();
+
+        if (!$user->activeSubscription) {
+            return redirect()->route('landing')
+                ->with('success', 'Email berhasil diverifikasi! Silakan pilih paket untuk memulai.');
+        }
+
+        if (!$user->business_unit_id) {
+            return redirect()->route('onboarding.setup-instance');
+        }
+
+        return redirect()->route('dashboard');
+    })->name('verification.verify-otp');
+
+    // Resend verification (works for both OTP and URL mode)
+    Route::post('email/verification-notification', function (Request $request) {
+        RegisterController::sendVerificationEmail($request->user());
+        return back()->with('message', 'Kode verifikasi telah dikirim ulang ke email Anda!');
     })->middleware('throttle:6,1')->name('verification.send');
 });
 
@@ -92,6 +120,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified'])->prefix('onboarding')->name('onboarding.')->group(function () {
     Route::post('subscribe', [OnboardingController::class, 'subscribe'])->name('subscribe');
     Route::post('redeem-voucher', [OnboardingController::class, 'redeemVoucher'])->name('redeem-voucher');
+    Route::get('payment/{subscription}', [OnboardingController::class, 'showPayment'])->name('payment');
     Route::get('setup-instance', [OnboardingController::class, 'showSetupInstance'])->name('setup-instance');
     Route::post('setup-instance', [OnboardingController::class, 'storeInstance'])->name('store-instance');
 });
@@ -263,6 +292,16 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('voucher', function () {
         return view('pages.voucher.index');
     })->name('voucher.index');
+
+    // Subscription Management (superadmin)
+    Route::get('subscription', function () {
+        return view('pages.subscription.index');
+    })->name('subscription.index');
+
+    // System Settings (superadmin)
+    Route::get('system-settings', function () {
+        return view('pages.system-settings.index');
+    })->name('system-settings.index');
 });
 
 
@@ -285,12 +324,13 @@ Route::get('/mail-verify-testing', function() {
     $details = [
         'subject' => 'Verifikasi Email Anda - TOKOKU',
         'userName' => 'Test User',
-        'verificationUrl' => 'https://example.com/test-verify-link',
+        'mode' => 'otp',
+        'otpCode' => '123456',
     ];
 
     try {
         Mail::to('uum1612@gmail.com')->send(new VerificationMail($details));
-        return 'Verification mail has been sent!';
+        return 'Verification mail (OTP) has been sent!';
     } catch (Exception $e) {
         return 'ERROR: ' . $e->getMessage();
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BusinessUnit;
 use App\Models\Plan;
+use App\Models\Subscription;
 use App\Services\SubscriptionService;
 use App\Services\VoucherService;
 use Illuminate\Http\Request;
@@ -12,7 +13,8 @@ use Illuminate\Support\Facades\DB;
 class OnboardingController extends Controller
 {
     /**
-     * Subscribe to a plan (simulated payment for now).
+     * Subscribe to a plan.
+     * Trial → auto activate. Paid → pending payment.
      */
     public function subscribe(Request $request, SubscriptionService $subscriptionService)
     {
@@ -30,14 +32,55 @@ class OnboardingController extends Controller
 
         $plan = Plan::where('slug', $request->plan)->firstOrFail();
 
-        $subscriptionService->createSubscription(
-            user: $user,
-            plan: $plan,
-            paymentMethod: $plan->price > 0 ? 'pending' : 'free',
-        );
+        if ($plan->price <= 0) {
+            // Trial / Free → activate immediately
+            $subscriptionService->createSubscription(
+                user: $user,
+                plan: $plan,
+                paymentMethod: 'free',
+            );
 
-        return redirect()->route('onboarding.setup-instance')
-            ->with('success', "Paket {$plan->name} berhasil diaktifkan! Sekarang buat instansi bisnis Anda.");
+            return redirect()->route('onboarding.setup-instance')
+                ->with('success', "Paket {$plan->name} berhasil diaktifkan! Sekarang buat instansi bisnis Anda.");
+        }
+
+        // Paid plan → create pending subscription
+        // Cancel any existing pending subscription first
+        $user->subscriptions()->where('status', 'pending')->update(['status' => 'cancelled']);
+
+        $subscription = Subscription::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'starts_at' => now()->toDateString(),
+            'ends_at' => now()->addDays($plan->duration_days)->toDateString(),
+            'status' => 'pending',
+            'amount_paid' => $plan->price,
+            'payment_method' => 'transfer',
+        ]);
+
+        return redirect()->route('onboarding.payment', ['subscription' => $subscription->id]);
+    }
+
+    /**
+     * Show payment instructions page.
+     */
+    public function showPayment(Subscription $subscription)
+    {
+        $user = auth()->user();
+
+        // Verify ownership
+        if ($subscription->user_id !== $user->id) {
+            abort(403);
+        }
+
+        // If already active, skip to next step
+        if ($subscription->status === 'active') {
+            return redirect()->route('onboarding.setup-instance');
+        }
+
+        $subscription->load('plan');
+
+        return view('onboarding.payment', compact('subscription'));
     }
 
     /**
@@ -68,8 +111,14 @@ class OnboardingController extends Controller
     {
         $user = auth()->user();
 
-        // Must have a subscription first
+        // Must have an active subscription first
         if (!$subscriptionService->hasActiveSubscription($user)) {
+            // Check if has pending subscription → redirect to payment
+            $pending = $user->pendingSubscription;
+            if ($pending) {
+                return redirect()->route('onboarding.payment', ['subscription' => $pending->id]);
+            }
+
             return redirect()->route('landing')
                 ->with('error', 'Silakan pilih paket terlebih dahulu.');
         }

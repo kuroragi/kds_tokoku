@@ -17,6 +17,21 @@ class AuthController extends Controller
             $request->remember()
         );
 
+        $user = Auth::user();
+
+        // Redirect based on onboarding state
+        if (!$user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+
+        if (!$user->activeSubscription) {
+            return redirect()->route('landing');
+        }
+
+        if (!$user->business_unit_id) {
+            return redirect()->route('onboarding.setup-instance');
+        }
+
         return redirect()->intended('dashboard');
     }
 

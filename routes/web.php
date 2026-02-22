@@ -8,6 +8,7 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\MasterController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\RegisterController;
@@ -20,6 +21,8 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SaldoController;
 use App\Http\Controllers\VoucherController;
 use App\Mail\SendMail;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
@@ -40,7 +43,49 @@ Route::middleware('guest')->group(function () {
 Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
 Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
-Route::middleware(['auth'])->group(function () {
+// ── Email Verification ──
+Route::middleware('auth')->group(function () {
+    Route::get('email/verify', function () {
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    Route::get('email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+
+        $user = $request->user();
+
+        // After verification → redirect based on onboarding state
+        if (!$user->activeSubscription) {
+            return redirect()->route('landing')
+                ->with('success', 'Email berhasil diverifikasi! Silakan pilih paket untuk memulai.');
+        }
+
+        if (!$user->business_unit_id) {
+            return redirect()->route('onboarding.setup-instance');
+        }
+
+        return redirect()->route('dashboard');
+    })->middleware('signed')->name('verification.verify');
+
+    Route::post('email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('message', 'Link verifikasi telah dikirim ulang ke email Anda!');
+    })->middleware('throttle:6,1')->name('verification.send');
+});
+
+// ── Onboarding (auth + verified, but not yet fully onboarded) ──
+Route::middleware(['auth', 'verified'])->prefix('onboarding')->name('onboarding.')->group(function () {
+    Route::post('subscribe', [OnboardingController::class, 'subscribe'])->name('subscribe');
+    Route::post('redeem-voucher', [OnboardingController::class, 'redeemVoucher'])->name('redeem-voucher');
+    Route::get('setup-instance', [OnboardingController::class, 'showSetupInstance'])->name('setup-instance');
+    Route::post('setup-instance', [OnboardingController::class, 'storeInstance'])->name('store-instance');
+});
+
+// ── Logout (any authenticated user) ──
+Route::post('logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+// ── Protected Routes (auth + verified + onboarded) ──
+Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('dashboard', [PageController::class, 'dashboard'])->name('dashboard');
 
     // Voucher Redeem
@@ -73,8 +118,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('general-ledger/{coa}', [ReportController::class, 'generalLedgerDetail'])->name('general-ledger.detail');
         Route::get('final-balance-sheet', [ReportController::class, 'finalBalanceSheet'])->name('final-balance-sheet');
     });
-
-    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Master Data
     Route::prefix('master')->group(function () {

@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Plan;
 use App\Models\User;
-use App\Services\SubscriptionService;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
@@ -19,15 +17,18 @@ class RegisterController extends Controller
         return view('register');
     }
 
-    public function store(Request $request, SubscriptionService $subscriptionService)
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:users,username'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)],
-            'plan' => ['nullable', 'string', 'exists:plans,slug'],
         ], [
             'name.required' => 'Nama lengkap wajib diisi.',
+            'username.required' => 'Username wajib diisi.',
+            'username.regex' => 'Username hanya boleh huruf, angka, dan underscore.',
+            'username.unique' => 'Username sudah digunakan.',
             'email.required' => 'Alamat email wajib diisi.',
             'email.unique' => 'Email sudah terdaftar.',
             'password.required' => 'Password wajib diisi.',
@@ -35,41 +36,23 @@ class RegisterController extends Controller
             'password.min' => 'Password minimal 8 karakter.',
         ]);
 
-        return DB::transaction(function () use ($validated, $subscriptionService) {
-            // Generate unique username
-            $baseUsername = Str::slug(Str::before($validated['email'], '@'), '_');
-            $username = $baseUsername;
-            $counter = 1;
-            while (User::withTrashed()->where('username', $username)->exists()) {
-                $username = $baseUsername . '_' . $counter++;
-            }
-
+        return DB::transaction(function () use ($validated) {
             $user = User::create([
                 'name' => $validated['name'],
-                'username' => $username,
+                'username' => $validated['username'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'is_active' => true,
             ]);
 
-            // Determine plan
-            $planSlug = $validated['plan'] ?? 'trial';
-            $plan = Plan::where('slug', $planSlug)->first();
+            // Fire Registered event → sends email verification
+            event(new Registered($user));
 
-            if ($plan) {
-                // For paid plans, still start with trial until payment
-                $actualPlan = $plan->price > 0
-                    ? Plan::where('slug', 'trial')->first() ?? $plan
-                    : $plan;
-
-                $subscriptionService->createSubscription($user, $actualPlan);
-            }
-
-            Auth::login($user, true);
+            Auth::login($user);
             request()->session()->regenerate();
 
-            return redirect()->route('dashboard')
-                ->with('success', 'Selamat datang di Tokoku ERP! Akun Anda telah berhasil dibuat.');
+            return redirect()->route('verification.notice')
+                ->with('success', 'Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.');
         });
     }
 }

@@ -73,10 +73,10 @@ class PlanAndVoucherSeeder extends Seeder
                 'name' => 'Trial',
                 'slug' => 'trial',
                 'price' => 0,
-                'duration_days' => 14,
+                'duration_days' => 30,
                 'max_users' => 1,
                 'max_business_units' => 1,
-                'description' => 'Coba gratis selama 14 hari. Akses fitur dasar akuntansi.',
+                'description' => 'Coba gratis selama 30 hari. Akses fitur dasar akuntansi.',
                 'sort_order' => 1,
             ],
             [

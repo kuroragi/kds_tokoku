@@ -69,13 +69,6 @@
                                         </div>
                                         @endif
 
-                                        @if(request('plan'))
-                                        <div class="selected-plan-badge mb-3 d-flex align-items-center gap-2">
-                                            <i class="ri-medal-line text-primary"></i>
-                                            <span class="small">Paket dipilih: <strong class="text-primary text-uppercase">{{ request('plan') }}</strong></span>
-                                        </div>
-                                        @endif
-
                                         <!-- Google Login -->
                                         <a href="{{ route('auth.google') }}" class="btn-google w-100 text-center d-flex justify-content-center">
                                             <svg class="google-icon" viewBox="0 0 24 24">
@@ -92,9 +85,6 @@
                                         <!-- Register form -->
                                         <form action="{{ route('register.store') }}" method="POST">
                                             @csrf
-                                            @if(request('plan'))
-                                            <input type="hidden" name="plan" value="{{ request('plan') }}">
-                                            @endif
 
                                             <div class="mb-3">
                                                 <label for="name" class="form-label">Nama Lengkap</label>
@@ -104,6 +94,21 @@
                                                 @error('name')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                                 @enderror
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="username" class="form-label">Username</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="ri-at-line"></i></span>
+                                                    <input class="form-control @error('username') is-invalid @enderror"
+                                                        type="text" name="username" id="username" required
+                                                        placeholder="username_anda" value="{{ old('username') }}"
+                                                        pattern="[a-zA-Z0-9_]+" title="Hanya huruf, angka, dan underscore">
+                                                    @error('username')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                                <small class="text-muted">Hanya huruf, angka, dan underscore (_)</small>
                                             </div>
 
                                             <div class="mb-3">

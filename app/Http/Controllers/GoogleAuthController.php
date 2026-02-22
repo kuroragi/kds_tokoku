@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Plan;
 use App\Models\User;
-use App\Services\SubscriptionService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +22,7 @@ class GoogleAuthController extends Controller
     /**
      * Handle Google OAuth callback.
      */
-    public function callback(SubscriptionService $subscriptionService)
+    public function callback()
     {
         try {
             $googleUser = Socialite::driver('google')->user();
@@ -33,7 +31,7 @@ class GoogleAuthController extends Controller
             return redirect()->route('login')->with('error', 'Gagal login dengan Google. Silakan coba lagi.');
         }
 
-        return DB::transaction(function () use ($googleUser, $subscriptionService) {
+        return DB::transaction(function () use ($googleUser) {
             // Cari user by google_id atau email
             $user = User::withTrashed()
                 ->where('google_id', $googleUser->getId())
@@ -52,7 +50,7 @@ class GoogleAuthController extends Controller
                     'avatar' => $googleUser->getAvatar(),
                 ]);
             } else {
-                // Buat user baru
+                // Buat user baru — no subscription yet
                 $username = $this->generateUniqueUsername($googleUser->getEmail());
 
                 $user = User::create([
@@ -61,23 +59,37 @@ class GoogleAuthController extends Controller
                     'email' => $googleUser->getEmail(),
                     'google_id' => $googleUser->getId(),
                     'avatar' => $googleUser->getAvatar(),
-                    'email_verified_at' => now(),
+                    'email_verified_at' => now(), // Google email is already verified
                     'password' => null,
                     'is_active' => true,
                 ]);
-
-                // Auto-assign Trial plan untuk user baru
-                $trialPlan = Plan::where('slug', 'trial')->first();
-                if ($trialPlan) {
-                    $subscriptionService->createSubscription($user, $trialPlan);
-                }
             }
 
             Auth::login($user, true);
             request()->session()->regenerate();
 
-            return redirect()->intended('dashboard');
+            // Redirect based on onboarding state
+            return $this->redirectBasedOnState($user);
         });
+    }
+
+    /**
+     * Redirect user based on their onboarding state.
+     */
+    private function redirectBasedOnState(User $user)
+    {
+        // No subscription → landing page to select plan
+        if (!$user->activeSubscription) {
+            return redirect()->route('landing');
+        }
+
+        // Has subscription but no instance → setup instance
+        if (!$user->business_unit_id) {
+            return redirect()->route('onboarding.setup-instance');
+        }
+
+        // Fully onboarded → dashboard
+        return redirect()->route('dashboard');
     }
 
     /**

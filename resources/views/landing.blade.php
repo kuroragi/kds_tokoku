@@ -436,8 +436,16 @@
                     <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
                 </ul>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('login') }}" class="btn btn-outline-primary btn-sm px-3">Login</a>
-                    <a href="{{ route('register') }}" class="btn btn-primary btn-sm px-3">Daftar Gratis</a>
+                    @auth
+                        <span class="btn btn-sm px-3 text-muted disabled">{{ auth()->user()->name }}</span>
+                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-danger btn-sm px-3">Logout</button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="btn btn-outline-primary btn-sm px-3">Login</a>
+                        <a href="{{ route('register') }}" class="btn btn-primary btn-sm px-3">Daftar Gratis</a>
+                    @endauth
                 </div>
             </div>
         </div>
@@ -461,18 +469,24 @@
                         payroll, aset, hingga pajak — semua dalam satu platform cloud.
                     </p>
                     <div class="d-flex flex-wrap gap-3 mt-4">
-                        <a href="{{ route('register') }}" class="btn btn-primary btn-lg px-4">
-                            <i class="ri-rocket-line me-1"></i> Mulai Gratis 14 Hari
-                        </a>
-                        <a href="{{ route('auth.google') }}" class="btn btn-google btn-lg">
-                            <svg class="google-icon" viewBox="0 0 24 24">
-                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                            </svg>
-                            Masuk dengan Google
-                        </a>
+                        @auth
+                            <a href="#pricing" class="btn btn-primary btn-lg px-4">
+                                <i class="ri-medal-line me-1"></i> Pilih Paket Anda
+                            </a>
+                        @else
+                            <a href="{{ route('register') }}" class="btn btn-primary btn-lg px-4">
+                                <i class="ri-rocket-line me-1"></i> Mulai Gratis 14 Hari
+                            </a>
+                            <a href="{{ route('auth.google') }}" class="btn btn-google btn-lg">
+                                <svg class="google-icon" viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                </svg>
+                                Masuk dengan Google
+                            </a>
+                        @endauth
                     </div>
                     <p class="mt-3 text-muted small">
                         <i class="ri-shield-check-line text-success me-1"></i>
@@ -714,15 +728,35 @@
                         </ul>
 
                         <div class="text-center btn-pricing">
-                            @if($plan->slug === 'trial')
-                            <a href="{{ route('register') }}" class="btn btn-outline-primary w-100">
-                                Coba Gratis
-                            </a>
+                            @auth
+                                @if(auth()->user()->activeSubscription)
+                                    <a href="{{ route('dashboard') }}" class="btn btn-success w-100">
+                                        <i class="ri-dashboard-line me-1"></i> Dashboard
+                                    </a>
+                                @else
+                                    <form action="{{ route('onboarding.subscribe') }}" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="plan" value="{{ $plan->slug }}">
+                                        <button type="submit" class="btn {{ $plan->slug === 'medium' ? 'btn-primary' : 'btn-outline-primary' }} w-100">
+                                            @if($plan->slug === 'trial')
+                                                Mulai Gratis
+                                            @else
+                                                Pilih {{ $plan->name }}
+                                            @endif
+                                        </button>
+                                    </form>
+                                @endif
                             @else
-                            <a href="{{ route('register', ['plan' => $plan->slug]) }}" class="btn {{ $plan->slug === 'medium' ? 'btn-primary' : 'btn-outline-primary' }} w-100">
-                                Pilih {{ $plan->name }}
-                            </a>
-                            @endif
+                                @if($plan->slug === 'trial')
+                                <a href="{{ route('register') }}" class="btn btn-outline-primary w-100">
+                                    Coba Gratis
+                                </a>
+                                @else
+                                <a href="{{ route('register') }}" class="btn {{ $plan->slug === 'medium' ? 'btn-primary' : 'btn-outline-primary' }} w-100">
+                                    Pilih {{ $plan->name }}
+                                </a>
+                                @endif
+                            @endauth
                         </div>
                     </div>
                 </div>
@@ -738,7 +772,7 @@
             <p class="mb-4 opacity-75">Masukkan kode voucher Anda untuk mendapatkan akses premium secara gratis.</p>
 
             @auth
-            <form action="{{ route('voucher.redeem') }}" method="POST">
+            <form action="{{ route('onboarding.redeem-voucher') }}" method="POST">
                 @csrf
                 <div class="input-group voucher-input-group">
                     <input type="text" name="code" class="form-control" placeholder="Masukkan kode voucher..." required>

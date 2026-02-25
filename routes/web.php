@@ -135,25 +135,35 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     // Voucher Redeem
     Route::post('voucher/redeem', [VoucherController::class, 'redeem'])->name('voucher.redeem');
 
-    // configuration routes
-    Route::get('coa', [AccountingController::class, 'coa'])->name('coa');
-    Route::get('journal', [AccountingController::class, 'journal'])->name('journal');
+    // ── COA & Accounting (plan: coa) ──
+    Route::middleware('plan:coa')->group(function () {
+        Route::get('coa', [AccountingController::class, 'coa'])->name('coa');
+        Route::get('journal', [AccountingController::class, 'journal'])->name('journal');
+        Route::get('adjustment-journal', [AccountingController::class, 'adjustmentJournal'])->name('adjustment-journal');
+    });
 
-    // accounting reports
-    Route::get('general-ledger', [AccountingController::class, 'generalLedger'])->name('general-ledger');
-    Route::get('general-ledger/{coa}', [AccountingController::class, 'generalLedgerDetail'])->name('general-ledger.detail');
-    Route::get('adjustment-journal', [AccountingController::class, 'adjustmentJournal'])->name('adjustment-journal');
-    Route::get('trial-balance', [AccountingController::class, 'trialBalance'])->name('trial-balance');
-    Route::get('income-statement', [AccountingController::class, 'incomeStatement'])->name('income-statement');
-    Route::get('adjusted-trial-balance', [AccountingController::class, 'adjustedTrialBalance'])->name('adjusted-trial-balance');
-    Route::get('tax-closing', [AccountingController::class, 'taxClosing'])->name('tax-closing');
-    Route::get('tax/report', [AccountingController::class, 'taxReport'])->name('tax-report.index');
+    // ── General Ledger (plan: general_ledger) ──
+    Route::middleware('plan:general_ledger')->group(function () {
+        Route::get('general-ledger', [AccountingController::class, 'generalLedger'])->name('general-ledger');
+        Route::get('general-ledger/{coa}', [AccountingController::class, 'generalLedgerDetail'])->name('general-ledger.detail');
+    });
 
-    // Report Pages
-    Route::get('report/final-balance-sheet', [AccountingController::class, 'finalBalanceSheet'])->name('report.final-balance-sheet');
+    // ── Trial Balance & Income Statement (plan: trial_balance) ──
+    Route::middleware('plan:trial_balance')->group(function () {
+        Route::get('trial-balance', [AccountingController::class, 'trialBalance'])->name('trial-balance');
+        Route::get('income-statement', [AccountingController::class, 'incomeStatement'])->name('income-statement');
+        Route::get('adjusted-trial-balance', [AccountingController::class, 'adjustedTrialBalance'])->name('adjusted-trial-balance');
+        Route::get('report/final-balance-sheet', [AccountingController::class, 'finalBalanceSheet'])->name('report.final-balance-sheet');
+    });
 
-    // PDF Report Downloads
-    Route::prefix('report/pdf')->name('report.pdf.')->group(function () {
+    // ── Tax (plan: tax) ──
+    Route::middleware('plan:tax')->group(function () {
+        Route::get('tax-closing', [AccountingController::class, 'taxClosing'])->name('tax-closing');
+        Route::get('tax/report', [AccountingController::class, 'taxReport'])->name('tax-report.index');
+    });
+
+    // PDF Report Downloads (plan: pdf_reports)
+    Route::middleware('plan:pdf_reports')->prefix('report/pdf')->name('report.pdf.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
         Route::get('balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
         Route::get('income-statement', [ReportController::class, 'incomeStatement'])->name('income-statement');
@@ -165,12 +175,12 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
 
     // Master Data
     Route::prefix('master')->group(function () {
-        // Business Unit
+        // Business Unit — always accessible
         Route::get('business-unit', [MasterController::class, 'businessUnitIndex'])->name('business-unit.index');
         Route::get('business-unit/create', [MasterController::class, 'businessUnitCreate'])->name('business-unit.create');
         Route::get('business-unit/{unit}/edit', [MasterController::class, 'businessUnitEdit'])->name('business-unit.edit');
 
-        // User Management
+        // User Management — always accessible
         Route::get('user', [MasterController::class, 'userIndex'])->name('user.index');
 
         // Role Management (superadmin only)
@@ -179,24 +189,28 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
             Route::get('permission', [MasterController::class, 'permissionIndex'])->name('permission.index');
         });
 
-        // Stock Management
-        Route::get('stock-category', [MasterController::class, 'stockCategoryIndex'])->name('stock-category.index');
-        Route::get('category-group', [MasterController::class, 'categoryGroupIndex'])->name('category-group.index');
-        Route::get('unit-of-measure', [MasterController::class, 'unitOfMeasureIndex'])->name('unit-of-measure.index');
-        Route::get('stock', [MasterController::class, 'stockIndex'])->name('stock.index');
+        // Stock Management (plan: master_data)
+        Route::middleware('plan:master_data')->group(function () {
+            Route::get('stock-category', [MasterController::class, 'stockCategoryIndex'])->name('stock-category.index');
+            Route::get('category-group', [MasterController::class, 'categoryGroupIndex'])->name('category-group.index');
+            Route::get('unit-of-measure', [MasterController::class, 'unitOfMeasureIndex'])->name('unit-of-measure.index');
+            Route::get('stock', [MasterController::class, 'stockIndex'])->name('stock.index');
+        });
 
-        // Jabatan (Position)
+        // Jabatan (Position) — always accessible
         Route::get('position', [MasterController::class, 'positionIndex'])->name('position.index');
 
-        // Kartu Nama
-        Route::get('employee', [MasterController::class, 'employeeIndex'])->name('employee.index');
-        Route::get('customer', [MasterController::class, 'customerIndex'])->name('customer.index');
-        Route::get('vendor', [MasterController::class, 'vendorIndex'])->name('vendor.index');
-        Route::get('partner', [MasterController::class, 'partnerIndex'])->name('partner.index');
+        // Kartu Nama (plan: master_data)
+        Route::middleware('plan:master_data')->group(function () {
+            Route::get('employee', [MasterController::class, 'employeeIndex'])->name('employee.index');
+            Route::get('customer', [MasterController::class, 'customerIndex'])->name('customer.index');
+            Route::get('vendor', [MasterController::class, 'vendorIndex'])->name('vendor.index');
+            Route::get('partner', [MasterController::class, 'partnerIndex'])->name('partner.index');
+        });
     });
 
-    // Asset Management
-    Route::prefix('asset')->group(function () {
+    // Asset Management (plan: asset)
+    Route::middleware('plan:asset')->prefix('asset')->group(function () {
         // Master Data
         Route::get('category', [AssetController::class, 'assetCategoryIndex'])->name('asset-category.index');
         Route::get('/', [AssetController::class, 'assetIndex'])->name('asset.index');
@@ -214,8 +228,8 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
         Route::get('report/history', [AssetController::class, 'reportHistory'])->name('asset-report.history');
     });
 
-    // AP/AR (Hutang / Piutang)
-    Route::prefix('apar')->group(function () {
+    // AP/AR (Hutang / Piutang) (plan: ap_ar)
+    Route::middleware('plan:ap_ar')->prefix('apar')->group(function () {
         Route::get('payable', [ApArController::class, 'payableIndex'])->name('payable.index');
         Route::get('receivable', [ApArController::class, 'receivableIndex'])->name('receivable.index');
 
@@ -225,8 +239,8 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
         Route::get('report/payment-history', [ApArController::class, 'reportPaymentHistory'])->name('apar-report.payment-history');
     });
 
-    // Payroll
-    Route::prefix('payroll')->group(function () {
+    // Payroll (plan: payroll)
+    Route::middleware('plan:payroll')->prefix('payroll')->group(function () {
         Route::get('salary-component', [PayrollController::class, 'salaryComponentIndex'])->name('salary-component.index');
         Route::get('setting', [PayrollController::class, 'payrollSettingIndex'])->name('payroll-setting.index');
         Route::get('/', [PayrollController::class, 'payrollIndex'])->name('payroll.index');
@@ -239,44 +253,52 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
         Route::get('{payrollPeriod}', [PayrollController::class, 'payrollDetail'])->name('payroll.detail');
     });
 
-    // Pinjaman Karyawan
-    Route::prefix('loan')->group(function () {
+    // Pinjaman Karyawan (plan: employee_loan)
+    Route::middleware('plan:employee_loan')->prefix('loan')->group(function () {
         Route::get('/', [LoanController::class, 'loanIndex'])->name('employee-loan.index');
         Route::get('{loan}', [LoanController::class, 'loanDetail'])->name('employee-loan.detail');
     });
 
-    // Saldo Management
-    Route::prefix('saldo')->group(function () {
+    // Saldo Management (plan: saldo)
+    Route::middleware('plan:saldo')->prefix('saldo')->group(function () {
         Route::get('provider', [SaldoController::class, 'providerIndex'])->name('saldo-provider.index');
         Route::get('product', [SaldoController::class, 'productIndex'])->name('saldo-product.index');
         Route::get('topup', [SaldoController::class, 'topupIndex'])->name('saldo-topup.index');
         Route::get('transaction', [SaldoController::class, 'transactionIndex'])->name('saldo-transaction.index');
-        Route::get('opening-balance', [SaldoController::class, 'openingBalanceIndex'])->name('opening-balance.index');
     });
 
-    // Bank Management
-    Route::prefix('bank')->group(function () {
+    // Opening Balance (plan: opening_balance)
+    Route::middleware('plan:opening_balance')->group(function () {
+        Route::get('saldo/opening-balance', [SaldoController::class, 'openingBalanceIndex'])->name('opening-balance.index');
+    });
+
+    // Bank Management (plan: bank)
+    Route::middleware('plan:bank')->prefix('bank')->group(function () {
         Route::get('/', [BankController::class, 'bankIndex'])->name('bank.index');
         Route::get('account', [BankController::class, 'accountIndex'])->name('bank-account.index');
         Route::get('transfer', [BankController::class, 'transferIndex'])->name('fund-transfer.index');
         Route::get('mutation', [BankController::class, 'mutationIndex'])->name('bank-mutation.index');
-        Route::get('reconciliation', [BankController::class, 'reconciliationIndex'])->name('bank-reconciliation.index');
     });
 
-    // Purchase Management
-    Route::prefix('purchase')->group(function () {
+    // Bank Reconciliation (plan: bank_reconciliation — Premium only)
+    Route::middleware('plan:bank_reconciliation')->group(function () {
+        Route::get('bank/reconciliation', [BankController::class, 'reconciliationIndex'])->name('bank-reconciliation.index');
+    });
+
+    // Purchase Management (plan: purchase)
+    Route::middleware('plan:purchase')->prefix('purchase')->group(function () {
         Route::get('order', [PurchaseController::class, 'purchaseOrderIndex'])->name('purchase-order.index');
         Route::get('/', [PurchaseController::class, 'purchaseIndex'])->name('purchase.index');
     });
 
-    // Opname (Stock & Saldo)
-    Route::prefix('opname')->group(function () {
+    // Opname (Stock & Saldo) (plan: stock_opname)
+    Route::middleware('plan:stock_opname')->prefix('opname')->group(function () {
         Route::get('stock', [OpnameController::class, 'stockOpnameIndex'])->name('stock-opname.index');
         Route::get('saldo', [OpnameController::class, 'saldoOpnameIndex'])->name('saldo-opname.index');
     });
 
-    // Sales Management
-    Route::prefix('sales')->group(function () {
+    // Sales Management (plan: sales)
+    Route::middleware('plan:sales')->prefix('sales')->group(function () {
         Route::get('/', [SalesController::class, 'salesIndex'])->name('sales.index');
     });
 
@@ -285,8 +307,8 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
         return view('pages.warehouse.monitor');
     })->name('warehouse.monitor');
 
-    // Project / Job Order
-    Route::get('project', [ProjectController::class, 'index'])->name('project.index');
+    // Project / Job Order (plan: project)
+    Route::middleware('plan:project')->get('project', [ProjectController::class, 'index'])->name('project.index');
 
     // Voucher Management (superadmin)
     Route::middleware('role:superadmin')->group(function () {

@@ -354,13 +354,14 @@
                         <!-- WhatsApp Button -->
                         <div class="d-grid gap-2 mb-3 no-print">
                             @php
+                                $adminWa = \App\Models\SystemSetting::get('admin_whatsapp', '6281234567890');
                                 $waMsg = "Halo Admin TOKOKU, saya ingin konfirmasi pembayaran:\n"
                                     . "Invoice: " . ($invoice?->invoice_number ?? '-') . "\n"
                                     . "Paket: " . $subscription->plan->name . "\n"
                                     . "Total: Rp " . number_format($payTotal, 0, ',', '.') . "\n"
                                     . "Email: " . auth()->user()->email;
                             @endphp
-                            <a href="https://wa.me/6281234567890?text={{ urlencode($waMsg) }}"
+                            <a href="https://wa.me/{{ $adminWa }}?text={{ urlencode($waMsg) }}"
                                target="_blank" class="btn btn-success btn-lg">
                                 <i class="ri-whatsapp-line me-2"></i> Konfirmasi via WhatsApp
                             </a>

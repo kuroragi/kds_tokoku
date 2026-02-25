@@ -14,6 +14,9 @@ class SystemSettings extends Component
     // General settings
     public string $appName = 'TOKOKU';
 
+    // Contact / WhatsApp settings
+    public string $adminWhatsapp = '';
+
     public bool $saved = false;
 
     public function mount(): void
@@ -21,6 +24,7 @@ class SystemSettings extends Component
         $this->verificationMethod = SystemSetting::get('verification_method', 'otp');
         $this->otpExpiryMinutes = SystemSetting::get('otp_expiry_minutes', '15');
         $this->appName = SystemSetting::get('app_name', 'TOKOKU');
+        $this->adminWhatsapp = SystemSetting::get('admin_whatsapp', '');
     }
 
     public function save(): void
@@ -29,11 +33,13 @@ class SystemSettings extends Component
             'verificationMethod' => 'required|in:otp,url',
             'otpExpiryMinutes' => 'required|integer|min:5|max:60',
             'appName' => 'required|string|max:100',
+            'adminWhatsapp' => 'nullable|string|max:20',
         ]);
 
         SystemSetting::set('verification_method', $this->verificationMethod);
         SystemSetting::set('otp_expiry_minutes', $this->otpExpiryMinutes);
         SystemSetting::set('app_name', $this->appName);
+        SystemSetting::set('admin_whatsapp', $this->adminWhatsapp, 'contact', 'Nomor WhatsApp admin untuk konfirmasi pembayaran');
 
         $this->saved = true;
 

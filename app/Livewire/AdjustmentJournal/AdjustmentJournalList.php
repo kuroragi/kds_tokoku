@@ -4,6 +4,7 @@ namespace App\Livewire\AdjustmentJournal;
 
 use App\Models\JournalMaster;
 use App\Models\Period;
+use App\Services\BusinessUnitService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Kuroragi\GeneralHelper\ActivityLog\ActivityLogger;
@@ -69,6 +70,9 @@ class AdjustmentJournalList extends Component
     {
         $query = JournalMaster::with(['period', 'journals.coa'])
             ->where('type', 'adjustment');
+
+        // Apply business unit scoping
+        BusinessUnitService::applyBusinessUnitFilter($query);
 
         if ($this->search) {
             $query->where(function ($q) {

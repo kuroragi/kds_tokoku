@@ -76,6 +76,17 @@
         </div>
     </div>
 
+    {{-- Pending Alert with WhatsApp --}}
+    @if($allSubs->pending_count > 0)
+    <div class="alert alert-warning d-flex align-items-center gap-3 mb-3">
+        <i class="ri-notification-3-line fs-3"></i>
+        <div class="flex-grow-1">
+            <strong>{{ $allSubs->pending_count }} langganan menunggu konfirmasi pembayaran.</strong>
+            <div class="text-muted small">Hubungi pelanggan via WhatsApp untuk memverifikasi pembayaran.</div>
+        </div>
+    </div>
+    @endif
+
     {{-- Table --}}
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -128,6 +139,20 @@
                     </td>
                     <td class="text-center">
                         @if($sub->status === 'pending')
+                            @php
+                                $userPhone = $sub->user->phone ?? '';
+                                $waNumber = $userPhone ?: '';
+                                $waText = "Halo " . ($sub->user->name ?? '') . ", kami dari TOKOKU.\n"
+                                    . "Langganan Paket " . ($sub->plan->name ?? '') . " Anda sudah kami terima.\n"
+                                    . "Total: Rp " . number_format($sub->amount_paid, 0, ',', '.') . "\n"
+                                    . "Mohon kirimkan bukti transfer untuk kami proses. Terima kasih!";
+                            @endphp
+                            @if($waNumber)
+                            <a href="https://wa.me/{{ $waNumber }}?text={{ urlencode($waText) }}"
+                               target="_blank" class="btn btn-sm btn-outline-success me-1" title="Hubungi via WA">
+                                <i class="ri-whatsapp-line"></i>
+                            </a>
+                            @endif
                             <button wire:click="openActivateModal({{ $sub->id }})" class="btn btn-sm btn-success me-1" title="Aktifkan">
                                 <i class="ri-check-double-line"></i> Aktifkan
                             </button>

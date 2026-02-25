@@ -32,12 +32,19 @@ class EnsureOnboarded
             return redirect()->route('verification.notice');
         }
 
-        // Step 2: Must have an active subscription
-        if (!$user->activeSubscription) {
-            // Check if has pending payment
+        // Step 2: Must have an active subscription (own or business unit owner's)
+        $subscriptionService = app(\App\Services\SubscriptionService::class);
+        if (!$subscriptionService->hasActiveSubscription($user)) {
+            // Check if has pending payment (own subscription only)
             $pending = $user->pendingSubscription;
             if ($pending) {
                 return redirect()->route('onboarding.payment', ['subscription' => $pending->id]);
+            }
+
+            // Team members without subscription → show error
+            if ($user->business_unit_id) {
+                return redirect()->route('landing')
+                    ->with('error', 'Langganan unit usaha Anda belum aktif. Hubungi pemilik unit usaha.');
             }
 
             return redirect()->route('landing')

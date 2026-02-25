@@ -4,6 +4,7 @@ namespace App\Livewire\Journal;
 
 use App\Models\JournalMaster;
 use App\Models\Period;
+use App\Services\BusinessUnitService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Kuroragi\GeneralHelper\ActivityLog\ActivityLogger;
@@ -77,6 +78,9 @@ class JournalList extends Component
     public function getJournalsProperty()
     {
         $query = JournalMaster::with(['period', 'journals.coa'])->general();
+
+        // Apply business unit scoping
+        BusinessUnitService::applyBusinessUnitFilter($query);
 
         // Apply search
         if ($this->search) {

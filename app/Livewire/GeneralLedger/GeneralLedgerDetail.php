@@ -5,6 +5,7 @@ namespace App\Livewire\GeneralLedger;
 use App\Models\COA;
 use App\Models\Journal;
 use App\Models\Period;
+use App\Services\BusinessUnitService;
 use Livewire\Component;
 
 class GeneralLedgerDetail extends Component
@@ -37,6 +38,14 @@ class GeneralLedgerDetail extends Component
             ->where('journal_masters.status', 'posted')
             ->whereNull('journals.deleted_at')
             ->whereNull('journal_masters.deleted_at');
+
+        // Apply business unit scoping
+        if (!BusinessUnitService::isSuperAdmin()) {
+            $unitId = BusinessUnitService::getUserBusinessUnitId();
+            if ($unitId) {
+                $query->where('journal_masters.business_unit_id', $unitId);
+            }
+        }
 
         if ($this->filterPeriod) {
             $query->where('journal_masters.id_period', $this->filterPeriod);

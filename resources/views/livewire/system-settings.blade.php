@@ -25,6 +25,33 @@
             </div>
         </div>
 
+        {{-- Contact / WhatsApp Settings --}}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="ri-whatsapp-line text-success me-2"></i> Pengaturan WhatsApp Admin</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nomor WhatsApp Admin</label>
+                            <div class="input-group">
+                                <span class="input-group-text">+</span>
+                                <input type="text" wire:model="adminWhatsapp"
+                                    class="form-control @error('adminWhatsapp') is-invalid @enderror"
+                                    placeholder="628xxxxxxxxxx">
+                            </div>
+                            @error('adminWhatsapp') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            <div class="text-muted small mt-1">
+                                <i class="ri-information-line me-1"></i>
+                                Format: kode negara + nomor tanpa + (contoh: 6281234567890). Digunakan untuk konfirmasi pembayaran langganan.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Auth Settings --}}
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-bottom">

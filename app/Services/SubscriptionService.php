@@ -42,15 +42,40 @@ class SubscriptionService
 
     /**
      * Get the currently active subscription for a user.
+     * If user doesn't have own subscription, look up the business unit owner's subscription.
      */
     public function getActiveSubscription(User $user): ?Subscription
     {
-        return $user->subscriptions()
+        // 1. Check user's own subscription
+        $subscription = $user->subscriptions()
             ->with('plan.features')
             ->active()
             ->notExpired()
             ->latest('ends_at')
             ->first();
+
+        if ($subscription) {
+            return $subscription;
+        }
+
+        // 2. Fallback: check business unit owner's (pemilik) subscription
+        if ($user->business_unit_id) {
+            $owner = User::where('business_unit_id', $user->business_unit_id)
+                ->whereHas('roles', fn($q) => $q->where('name', 'pemilik'))
+                ->where('id', '!=', $user->id)
+                ->first();
+
+            if ($owner) {
+                return $owner->subscriptions()
+                    ->with('plan.features')
+                    ->active()
+                    ->notExpired()
+                    ->latest('ends_at')
+                    ->first();
+            }
+        }
+
+        return null;
     }
 
     /**

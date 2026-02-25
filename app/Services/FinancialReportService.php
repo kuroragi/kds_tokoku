@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\COA;
 use App\Models\Journal;
 use App\Models\Period;
+use App\Services\BusinessUnitService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -198,11 +199,12 @@ class FinancialReportService
     }
 
     /**
-     * Base query: posted journals joined with COA
+     * Base query: posted journals joined with COA.
+     * Automatically scoped by business_unit_id for non-superadmin users.
      */
-    private function baseQuery()
+    private function baseQuery(?int $businessUnitId = null)
     {
-        return Journal::query()
+        $query = Journal::query()
             ->join('journal_masters', 'journals.id_journal_master', '=', 'journal_masters.id')
             ->join('c_o_a_s', 'journals.id_coa', '=', 'c_o_a_s.id')
             ->where('journal_masters.status', 'posted')
@@ -210,14 +212,35 @@ class FinancialReportService
             ->whereNull('journal_masters.deleted_at')
             ->whereNull('c_o_a_s.deleted_at')
             ->where('c_o_a_s.is_active', true);
+
+        // Apply business unit scoping
+        $unitId = $businessUnitId ?? $this->resolveBusinessUnitId();
+        if ($unitId) {
+            $query->where('journal_masters.business_unit_id', $unitId);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Resolve the business_unit_id for scoping.
+     * Superadmin sees all; others see only their unit.
+     */
+    private function resolveBusinessUnitId(): ?int
+    {
+        if (BusinessUnitService::isSuperAdmin()) {
+            return null; // superadmin sees all
+        }
+
+        return BusinessUnitService::getUserBusinessUnitId();
     }
 
     /**
      * Base query filtered by journal type
      */
-    private function baseQueryByType(string $type)
+    private function baseQueryByType(string $type, ?int $businessUnitId = null)
     {
-        return $this->baseQuery()->where('journal_masters.type', $type);
+        return $this->baseQuery($businessUnitId)->where('journal_masters.type', $type);
     }
 
     /**

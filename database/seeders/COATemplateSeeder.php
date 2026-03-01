@@ -129,8 +129,9 @@ class COATemplateSeeder extends Seeder
 
         // ── Beban Administrasi & Umum ──
         $make('5301', 'Beban Gaji & Upah',          'beban', 3, '5300', 1);
-        uyjjjjjjjj){>{}', 'Beban Utilitas',             'beban', 3, '5300', 2);
-        $make('5303', 'Beban Sewa',                 'beban', 3, '5300', 3);)_PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPv        'beban', 3, '5300', 4);
+        $make('5302', 'Beban Utilitas',             'beban', 3, '5300', 2);
+        $make('5303', 'Beban Sewa',                 'beban', 3, '5300', 3);
+        $make('5304', 'Beban Penyusutan',           'beban', 3, '5300', 4);
         $make('5305', 'Beban Amortisasi',           'beban', 3, '5300', 5);
         $make('5306', 'Beban Administrasi Kantor',  'beban', 3, '5300', 6);
 
@@ -166,6 +167,7 @@ class COATemplateSeeder extends Seeder
         // ── Biaya Dibayar Dimuka ──
         $make('1104.001', 'Sewa Dibayar Dimuka',        'aktiva', 4, '1104', 1, true);
         $make('1104.002', 'Asuransi Dibayar Dimuka',    'aktiva', 4, '1104', 2, true);
+        $make('1104.003', 'Perlengkapan',               'aktiva', 4, '1104', 3, true);
 
         // ── Pajak Dibayar Dimuka ──
         $make('1105.001', 'PPN Masukan',                'aktiva', 4, '1105', 1, true);

@@ -71,8 +71,9 @@
                         </th>
                         <th width="12%" class="text-end">Harga Perolehan</th>
                         <th width="8%">Lokasi</th>
+                        <th width="5%" class="text-center">Jurnal</th>
                         <th width="7%" class="text-center">Status</th>
-                        <th width="8%" class="text-center pe-3">Aksi</th>
+                        <th width="10%" class="text-center pe-3">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -94,6 +95,17 @@
                         <td class="text-end">Rp {{ number_format($asset->acquisition_cost, 0, ',', '.') }}</td>
                         <td class="text-muted small">{{ $asset->location ?? '-' }}</td>
                         <td class="text-center">
+                            @if($asset->journal_master_id)
+                                <span class="badge bg-success bg-opacity-75" title="Jurnal #{{ $asset->journal_master_id }}">
+                                    <i class="ri-check-line"></i>
+                                </span>
+                            @else
+                                <span class="badge bg-warning bg-opacity-75" title="Belum ada jurnal">
+                                    <i class="ri-alert-line"></i>
+                                </span>
+                            @endif
+                        </td>
+                        <td class="text-center">
                             @php
                                 $statusColors = ['active' => 'success', 'disposed' => 'danger', 'under_repair' => 'warning'];
                             @endphp
@@ -103,6 +115,12 @@
                         </td>
                         <td class="text-center pe-3">
                             <div class="btn-group btn-group-sm">
+                                @if(!$asset->journal_master_id)
+                                <button class="btn btn-outline-warning" wire:click="retryJournal({{ $asset->id }})"
+                                    wire:confirm="Buat jurnal pengadaan untuk aset '{{ $asset->name }}'?" title="Buat Jurnal">
+                                    <i class="ri-file-list-3-line"></i>
+                                </button>
+                                @endif
                                 <button class="btn btn-outline-primary" wire:click="$dispatch('editAsset', { id: {{ $asset->id }} })" title="Edit">
                                     <i class="ri-pencil-line"></i>
                                 </button>
@@ -116,7 +134,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ $isSuperAdmin ? 10 : 9 }}" class="text-center py-5">
+                        <td colspan="{{ $isSuperAdmin ? 11 : 10 }}" class="text-center py-5">
                             <div class="text-muted">
                                 <i class="ri-computer-line" style="font-size: 3rem; opacity: 0.3;"></i>
                                 <p class="mt-2 mb-0">Belum ada aset</p>

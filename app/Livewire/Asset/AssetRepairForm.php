@@ -6,6 +6,7 @@ use App\Models\Asset;
 use App\Models\AssetRepair;
 use App\Models\Vendor;
 use App\Services\BusinessUnitService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class AssetRepairForm extends Component
@@ -104,21 +105,27 @@ class AssetRepairForm extends Component
             'notes' => $this->notes ?: null,
         ];
 
-        if ($this->isEditing) {
-            $repair = AssetRepair::findOrFail($this->repairId);
-            $repair->update($data);
+        DB::beginTransaction();
+        try {
+            if ($this->isEditing) {
+                $repair = AssetRepair::findOrFail($this->repairId);
+                $repair->update($data);
 
-            // Jika status completed, kembalikan asset ke active
-            if ($this->status === 'completed' && $repair->asset->status === 'under_repair') {
-                $repair->asset->update(['status' => 'active']);
-            }
-        } else {
-            AssetRepair::create($data);
+                if ($this->status === 'completed' && $repair->asset->status === 'under_repair') {
+                    $repair->asset->update(['status' => 'active']);
+                }
+            } else {
+                AssetRepair::create($data);
 
-            // Tandai aset sedang diperbaiki
-            if ($this->mark_under_repair) {
-                Asset::find($this->asset_id)?->update(['status' => 'under_repair']);
+                if ($this->mark_under_repair) {
+                    Asset::find($this->asset_id)?->update(['status' => 'under_repair']);
+                }
             }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->dispatch('alert', type: 'error', message: "Gagal menyimpan perbaikan: {$e->getMessage()}");
+            return;
         }
 
         $action = $this->isEditing ? 'diperbarui' : 'dicatat';

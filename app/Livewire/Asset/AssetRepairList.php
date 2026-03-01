@@ -4,6 +4,7 @@ namespace App\Livewire\Asset;
 
 use App\Models\AssetRepair;
 use App\Services\BusinessUnitService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class AssetRepairList extends Component
@@ -43,15 +44,23 @@ class AssetRepairList extends Component
         $repair = AssetRepair::findOrFail($id);
         $updateData = ['status' => $status];
 
-        if ($status === 'completed') {
-            $updateData['completed_date'] = now()->format('Y-m-d');
-            // Restore asset status if it was under_repair
-            if ($repair->asset && $repair->asset->status === 'under_repair') {
-                $repair->asset->update(['status' => 'active']);
+        DB::beginTransaction();
+        try {
+            if ($status === 'completed') {
+                $updateData['completed_date'] = now()->format('Y-m-d');
+                if ($repair->asset && $repair->asset->status === 'under_repair') {
+                    $repair->asset->update(['status' => 'active']);
+                }
             }
+
+            $repair->update($updateData);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->dispatch('alert', type: 'error', message: "Gagal mengubah status: {$e->getMessage()}");
+            return;
         }
 
-        $repair->update($updateData);
         $statusLabel = AssetRepair::STATUSES[$status] ?? $status;
         $this->dispatch('alert', type: 'success', message: "Status perbaikan diubah menjadi '{$statusLabel}'.");
     }

@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Mail\SubscriptionActivatedMail;
 use App\Models\Subscription;
 use App\Services\InvoiceService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -67,24 +68,32 @@ class SubscriptionManagement extends Component
     {
         $subscription = Subscription::findOrFail($this->activateId);
 
-        $subscription->update([
-            'status' => 'active',
-            'payment_method' => 'transfer',
-            'payment_reference' => $this->paymentReference ?: 'Dikonfirmasi Admin',
-            'starts_at' => now()->toDateString(),
-            'ends_at' => now()->addDays($subscription->plan->duration_days)->toDateString(),
-        ]);
+        DB::beginTransaction();
+        try {
+            $subscription->update([
+                'status' => 'active',
+                'payment_method' => 'transfer',
+                'payment_reference' => $this->paymentReference ?: 'Dikonfirmasi Admin',
+                'starts_at' => now()->toDateString(),
+                'ends_at' => now()->addDays($subscription->plan->duration_days)->toDateString(),
+            ]);
 
-        // Mark the invoice as paid
-        $invoiceService = app(InvoiceService::class);
-        $invoiceService->markPaid($subscription, 'transfer', $this->paymentReference ?: 'Dikonfirmasi Admin');
+            // Mark the invoice as paid
+            $invoiceService = app(InvoiceService::class);
+            $invoiceService->markPaid($subscription, 'transfer', $this->paymentReference ?: 'Dikonfirmasi Admin');
 
-        // Send activation email to user
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            session()->flash('error', "Gagal mengaktifkan langganan: {$e->getMessage()}");
+            return;
+        }
+
+        // Send activation email to user (outside transaction — non-critical)
         try {
             Mail::to($subscription->user->email)
                 ->send(new SubscriptionActivatedMail($subscription));
         } catch (\Exception $e) {
-            // Log but don't fail activation
             \Log::warning('Failed to send activation email: ' . $e->getMessage());
         }
 
@@ -98,11 +107,21 @@ class SubscriptionManagement extends Component
     public function cancelSubscription(int $id): void
     {
         $subscription = Subscription::findOrFail($id);
-        $subscription->update(['status' => 'cancelled']);
 
-        // Cancel related invoice
-        $invoiceService = app(InvoiceService::class);
-        $invoiceService->cancelForSubscription($subscription);
+        DB::beginTransaction();
+        try {
+            $subscription->update(['status' => 'cancelled']);
+
+            // Cancel related invoice
+            $invoiceService = app(InvoiceService::class);
+            $invoiceService->cancelForSubscription($subscription);
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            session()->flash('error', "Gagal membatalkan langganan: {$e->getMessage()}");
+            return;
+        }
 
         session()->flash('success', "Langganan untuk {$subscription->user->name} dibatalkan.");
     }

@@ -6,6 +6,7 @@ use App\Models\Asset;
 use App\Models\AssetDisposal;
 use App\Services\AssetService;
 use App\Services\BusinessUnitService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class AssetDisposalForm extends Component
@@ -147,27 +148,25 @@ class AssetDisposalForm extends Component
             'notes' => $this->notes ?: null,
         ];
 
-        if ($this->isEditing) {
-            AssetDisposal::findOrFail($this->disposalId)->update($data);
-        } else {
-            $disposal = AssetDisposal::create($data);
+        DB::beginTransaction();
+        try {
+            if ($this->isEditing) {
+                AssetDisposal::findOrFail($this->disposalId)->update($data);
+            } else {
+                $disposal = AssetDisposal::create($data);
+                $asset->update(['status' => 'disposed']);
 
-            // Update status aset
-            $asset->update(['status' => 'disposed']);
-
-            // Buat jurnal disposal
-            if ($this->create_journal) {
-                $journal = $service->createDisposalJournal($disposal);
-                if (!$journal) {
-                    $this->dispatch('alert', type: 'warning', message: 'Disposal berhasil dicatat, tetapi jurnal gagal dibuat (periksa mapping COA & periode).');
-                    $this->dispatch('refreshAssetDisposalList');
-                    $this->closeModal();
-                    return;
-                }
+                // Jurnal disposal SELALU dibuat
+                $service->createDisposalJournal($disposal);
             }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->dispatch('alert', type: 'error', message: "Gagal menyimpan disposal: {$e->getMessage()}");
+            return;
         }
 
-        $action = $this->isEditing ? 'diperbarui' : 'dicatat';
+        $action = $this->isEditing ? 'diperbarui' : 'dicatat (dengan jurnal)';
         $this->dispatch('alert', type: 'success', message: "Disposal aset berhasil {$action}.");
         $this->dispatch('refreshAssetDisposalList');
         $this->closeModal();

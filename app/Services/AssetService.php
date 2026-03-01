@@ -19,8 +19,28 @@ class AssetService
         $this->journalService = $journalService;
     }
 
+    // ─── Book Value & Depreciation Helpers ──────────────────────────
+
     /**
-     * Hitung penyusutan bulanan untuk satu aset
+     * Nilai buku saat ini (termasuk akumulasi awal untuk saldo awal).
+     */
+    public function getCurrentBookValue(Asset $asset): int
+    {
+        return max(0, $asset->acquisition_cost - $this->getAccumulatedDepreciation($asset));
+    }
+
+    /**
+     * Total akumulasi penyusutan (initial + system-recorded).
+     */
+    public function getAccumulatedDepreciation(Asset $asset): int
+    {
+        return (int) $asset->initial_accumulated_depreciation
+            + (int) $asset->depreciations()->sum('depreciation_amount');
+    }
+
+    /**
+     * Hitung penyusutan bulanan untuk satu aset.
+     * Memperhitungkan initial_accumulated_depreciation pada book value.
      */
     public function calculateMonthlyDepreciation(Asset $asset): int
     {
@@ -31,8 +51,9 @@ class AssetService
         }
 
         if ($asset->depreciation_method === 'straight_line') {
-            $monthly = (int) round(($asset->acquisition_cost - $asset->salvage_value) / $asset->useful_life_months);
-            // Jangan melewati salvage value
+            $monthly = (int) round(
+                ($asset->acquisition_cost - $asset->salvage_value) / $asset->useful_life_months
+            );
             if ($bookValue - $monthly < $asset->salvage_value) {
                 $monthly = $bookValue - $asset->salvage_value;
             }
@@ -51,25 +72,11 @@ class AssetService
         return max(0, $monthly);
     }
 
-    /**
-     * Nilai buku saat ini
-     */
-    public function getCurrentBookValue(Asset $asset): int
-    {
-        $totalDepreciation = (int) $asset->depreciations()->sum('depreciation_amount');
-        return max(0, $asset->acquisition_cost - $totalDepreciation);
-    }
+    // ─── Depreciation Preview & Processing ──────────────────────────
 
     /**
-     * Total akumulasi penyusutan
-     */
-    public function getAccumulatedDepreciation(Asset $asset): int
-    {
-        return (int) $asset->depreciations()->sum('depreciation_amount');
-    }
-
-    /**
-     * Preview penyusutan untuk satu periode (tanpa menyimpan)
+     * Preview penyusutan untuk satu periode (tanpa menyimpan).
+     * Skip kategori tanpa COA penyusutan (mis. tanah).
      */
     public function previewDepreciation(int $businessUnitId, int $periodId): array
     {
@@ -81,19 +88,15 @@ class AssetService
 
         $preview = [];
         foreach ($assets as $asset) {
-            // Skip jika sudah ada penyusutan di periode ini
-            if ($asset->depreciations()->where('period_id', $periodId)->exists()) {
-                continue;
-            }
-            // Skip jika tanggal perolehan setelah akhir periode
-            if ($asset->acquisition_date > $period->end_date) {
-                continue;
-            }
+            if ($asset->depreciations()->where('period_id', $periodId)->exists()) continue;
+            if ($asset->acquisition_date > $period->end_date) continue;
+
+            // Skip kategori tanpa COA penyusutan (mis. tanah)
+            $category = $asset->assetCategory;
+            if (!$category?->coa_expense_dep_key || !$category?->coa_accumulated_dep_key) continue;
 
             $bookValue = $this->getCurrentBookValue($asset);
-            if ($bookValue <= $asset->salvage_value) {
-                continue;
-            }
+            if ($bookValue <= $asset->salvage_value) continue;
 
             $amount = $this->calculateMonthlyDepreciation($asset);
             if ($amount <= 0) continue;
@@ -112,7 +115,8 @@ class AssetService
     }
 
     /**
-     * Proses penyusutan batch untuk satu periode
+     * Proses penyusutan batch untuk satu periode.
+     * Jurnal dikelompokkan per pasangan COA kategori aset.
      */
     public function processDepreciation(int $businessUnitId, int $periodId): array
     {
@@ -126,11 +130,14 @@ class AssetService
         DB::beginTransaction();
         try {
             $results = [];
-            $totalDepreciation = 0;
+            $groupedByCoaKeys = []; // key => ['expense_key', 'accum_key', 'total', 'category_name']
 
             foreach ($preview as $item) {
+                $asset = $item['asset'];
+                $category = $asset->assetCategory;
+
                 $depreciation = AssetDepreciation::create([
-                    'asset_id' => $item['asset']->id,
+                    'asset_id' => $asset->id,
                     'period_id' => $periodId,
                     'depreciation_date' => $period->end_date,
                     'depreciation_amount' => $item['depreciation_amount'],
@@ -139,18 +146,29 @@ class AssetService
                 ]);
 
                 $results[] = $depreciation;
-                $totalDepreciation += $item['depreciation_amount'];
+
+                // Group by COA key pair for journal entries
+                $expenseKey = $category->coa_expense_dep_key;
+                $accumKey = $category->coa_accumulated_dep_key;
+                $groupKey = $expenseKey . '|' . $accumKey;
+
+                if (!isset($groupedByCoaKeys[$groupKey])) {
+                    $groupedByCoaKeys[$groupKey] = [
+                        'expense_key' => $expenseKey,
+                        'accum_key' => $accumKey,
+                        'total' => 0,
+                        'category_name' => $category->name,
+                    ];
+                }
+                $groupedByCoaKeys[$groupKey]['total'] += $item['depreciation_amount'];
             }
 
-            // Buat jurnal penyesuaian gabungan
-            $journalMaster = null;
-            if ($totalDepreciation > 0) {
-                $journalMaster = $this->createDepreciationJournal($businessUnitId, $period, $totalDepreciation);
+            // Buat jurnal penyesuaian gabungan (per-kategori COA)
+            $journalMaster = $this->createDepreciationJournal($businessUnitId, $period, $groupedByCoaKeys);
 
-                if ($journalMaster) {
-                    foreach ($results as $dep) {
-                        $dep->update(['journal_master_id' => $journalMaster->id]);
-                    }
+            if ($journalMaster) {
+                foreach ($results as $dep) {
+                    $dep->update(['journal_master_id' => $journalMaster->id]);
                 }
             }
 
@@ -163,82 +181,113 @@ class AssetService
     }
 
     /**
-     * Buat jurnal penyesuaian penyusutan
+     * Buat jurnal penyesuaian penyusutan.
+     * Entries dikelompokkan per pasangan COA (beban_peny_X / akum_peny_X).
      */
-    protected function createDepreciationJournal(int $businessUnitId, Period $period, int $totalAmount): ?JournalMaster
+    protected function createDepreciationJournal(int $businessUnitId, Period $period, array $groupedByCoaKeys): ?JournalMaster
     {
-        $businessUnit = BusinessUnit::find($businessUnitId);
-        $coaExpense = $businessUnit->getCoaByKey('beban_penyusutan');
-        $coaAccumulated = $businessUnit->getCoaByKey('akumulasi_penyusutan');
+        $businessUnit = BusinessUnit::findOrFail($businessUnitId);
+        $entries = [];
 
-        if (!$coaExpense || !$coaAccumulated) {
+        foreach ($groupedByCoaKeys as $group) {
+            if ($group['total'] <= 0) continue;
+
+            $coaExpense = $businessUnit->getCoaByKey($group['expense_key']);
+            $coaAccum = $businessUnit->getCoaByKey($group['accum_key']);
+
+            if (!$coaExpense || !$coaAccum) {
+                throw new \RuntimeException(
+                    "COA mapping tidak ditemukan: '{$group['expense_key']}' atau '{$group['accum_key']}'. " .
+                    "Pastikan mapping COA sudah diatur untuk unit usaha '{$businessUnit->name}'."
+                );
+            }
+
+            $entries[] = [
+                'coa_code' => $coaExpense->code,
+                'description' => "Beban penyusutan {$group['category_name']}",
+                'debit' => $group['total'],
+                'credit' => 0,
+            ];
+            $entries[] = [
+                'coa_code' => $coaAccum->code,
+                'description' => "Akumulasi penyusutan {$group['category_name']}",
+                'debit' => 0,
+                'credit' => $group['total'],
+            ];
+        }
+
+        if (empty($entries)) {
             return null;
         }
 
         return $this->journalService->createJournalEntry([
+            'business_unit_id' => $businessUnitId,
             'type' => 'adjustment',
             'journal_date' => $period->end_date->format('Y-m-d'),
             'reference' => 'DEP/' . $period->year . '/' . str_pad($period->month, 2, '0', STR_PAD_LEFT),
             'description' => 'Penyusutan aset bulan ' . $period->period_name,
             'id_period' => $period->id,
-            'entries' => [
-                [
-                    'coa_code' => $coaExpense->code,
-                    'description' => 'Beban penyusutan aset',
-                    'debit' => $totalAmount,
-                    'credit' => 0,
-                ],
-                [
-                    'coa_code' => $coaAccumulated->code,
-                    'description' => 'Akumulasi penyusutan aset',
-                    'debit' => 0,
-                    'credit' => $totalAmount,
-                ],
-            ],
+            'entries' => $entries,
         ]);
     }
 
+    // ─── Acquisition Journal ────────────────────────────────────────
+
     /**
-     * Buat jurnal pengadaan aset
+     * Buat jurnal pengadaan aset.
+     * Mendukung 3 tipe: opening_balance, purchase_cash, purchase_credit.
+     * Menggunakan COA per-kategori aset.
+     *
+     * @throws \RuntimeException jika COA mapping / periode tidak ditemukan
      */
-    public function createAcquisitionJournal(Asset $asset, string $paymentCoaKey = 'kas_utama'): ?JournalMaster
+    public function createAcquisitionJournal(Asset $asset, ?string $paymentCoaKey = null): JournalMaster
     {
         $businessUnit = $asset->businessUnit;
-        $coaAsset = $businessUnit->getCoaByKey('peralatan');
-        $coaPayment = $businessUnit->getCoaByKey($paymentCoaKey);
+        $category = $asset->assetCategory;
 
-        if (!$coaAsset || !$coaPayment) {
-            return null;
+        // Resolve COA aset dari kategori
+        $coaAssetKey = $category->coa_asset_key;
+        if (!$coaAssetKey) {
+            throw new \RuntimeException(
+                "Kategori aset '{$category->name}' belum memiliki mapping COA aset. " .
+                "Atur terlebih dahulu di pengaturan kategori."
+            );
         }
 
+        $coaAsset = $businessUnit->getCoaByKey($coaAssetKey);
+        if (!$coaAsset) {
+            throw new \RuntimeException(
+                "COA mapping '{$coaAssetKey}' tidak ditemukan untuk unit usaha '{$businessUnit->name}'."
+            );
+        }
+
+        // Resolve periode
         $period = Period::where('start_date', '<=', $asset->acquisition_date)
             ->where('end_date', '>=', $asset->acquisition_date)
             ->first();
 
         if (!$period) {
-            return null;
+            throw new \RuntimeException(
+                "Periode akuntansi belum tersedia untuk tanggal " . $asset->acquisition_date->format('d/m/Y') . "."
+            );
         }
 
+        // Build entries berdasarkan tipe perolehan
+        $entries = match ($asset->acquisition_type) {
+            'opening_balance' => $this->buildOpeningBalanceEntries($asset, $businessUnit, $coaAsset),
+            'purchase_cash'   => $this->buildPurchaseCashEntries($asset, $businessUnit, $coaAsset, $paymentCoaKey ?? 'kas_utama'),
+            'purchase_credit' => $this->buildPurchaseCreditEntries($asset, $businessUnit, $coaAsset),
+            default => throw new \RuntimeException("Tipe perolehan '{$asset->acquisition_type}' tidak dikenali."),
+        };
+
         $journal = $this->journalService->createJournalEntry([
+            'business_unit_id' => $businessUnit->id,
             'type' => 'general',
             'journal_date' => $asset->acquisition_date->format('Y-m-d'),
             'reference' => 'ACQ/' . $asset->code,
             'description' => 'Pengadaan aset: ' . $asset->name,
             'id_period' => $period->id,
-            'entries' => [
-                [
-                    'coa_code' => $coaAsset->code,
-                    'description' => 'Pengadaan ' . $asset->name,
-                    'debit' => $asset->acquisition_cost,
-                    'credit' => 0,
-                ],
-                [
-                    'coa_code' => $coaPayment->code,
-                    'description' => 'Pembayaran aset ' . $asset->name,
-                    'debit' => 0,
-                    'credit' => $asset->acquisition_cost,
-                ],
-            ],
+            'entries' => $entries,
         ]);
 
         $asset->update(['journal_master_id' => $journal->id]);
@@ -247,19 +296,152 @@ class AssetService
     }
 
     /**
-     * Buat jurnal disposal aset
+     * Saldo Awal: Dr Aset, Cr Akum.Penyusutan (jika ada), Cr Hutang (jika debt/mixed), Cr Modal.
      */
-    public function createDisposalJournal(AssetDisposal $disposal): ?JournalMaster
+    protected function buildOpeningBalanceEntries(Asset $asset, BusinessUnit $bu, $coaAsset): array
+    {
+        $entries = [];
+        $cost = $asset->acquisition_cost;
+        $initialDep = (int) $asset->initial_accumulated_depreciation;
+        $debt = in_array($asset->funding_source, ['debt', 'mixed']) ? (int) $asset->remaining_debt_amount : 0;
+
+        // Dr: Aset tetap
+        $entries[] = [
+            'coa_code' => $coaAsset->code,
+            'description' => "Saldo awal aset: {$asset->name}",
+            'debit' => $cost,
+            'credit' => 0,
+        ];
+
+        // Cr: Akumulasi Penyusutan (jika ada penyusutan sebelumnya)
+        if ($initialDep > 0) {
+            $category = $asset->assetCategory;
+            $accumKey = $category->coa_accumulated_dep_key;
+            if (!$accumKey) {
+                throw new \RuntimeException(
+                    "Kategori '{$category->name}' tidak memiliki COA akumulasi penyusutan."
+                );
+            }
+            $coaAccum = $bu->getCoaByKey($accumKey);
+            if (!$coaAccum) {
+                throw new \RuntimeException("COA mapping '{$accumKey}' tidak ditemukan.");
+            }
+            $entries[] = [
+                'coa_code' => $coaAccum->code,
+                'description' => "Akum. penyusutan saldo awal {$asset->name}",
+                'debit' => 0,
+                'credit' => $initialDep,
+            ];
+        }
+
+        // Cr: Hutang Bank (untuk funding source debt/mixed)
+        if ($debt > 0) {
+            $coaDebt = $bu->getCoaByKey('hutang_bank');
+            if (!$coaDebt) {
+                throw new \RuntimeException("COA mapping 'hutang_bank' tidak ditemukan.");
+            }
+            $entries[] = [
+                'coa_code' => $coaDebt->code,
+                'description' => "Hutang atas aset {$asset->name}",
+                'debit' => 0,
+                'credit' => $debt,
+            ];
+        }
+
+        // Cr: Modal Pemilik (sisa setelah akum. penyusutan dan hutang)
+        $modalAmount = $cost - $initialDep - $debt;
+        if ($modalAmount > 0) {
+            $coaModal = $bu->getCoaByKey('modal_pemilik');
+            if (!$coaModal) {
+                throw new \RuntimeException("COA mapping 'modal_pemilik' tidak ditemukan.");
+            }
+            $entries[] = [
+                'coa_code' => $coaModal->code,
+                'description' => "Modal pemilik atas aset {$asset->name}",
+                'debit' => 0,
+                'credit' => $modalAmount,
+            ];
+        } elseif ($modalAmount < 0) {
+            throw new \RuntimeException(
+                "Konfigurasi saldo awal tidak valid: " .
+                "total hutang ({$debt}) + akumulasi penyusutan ({$initialDep}) melebihi harga perolehan ({$cost})."
+            );
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Pembelian Tunai: Dr Aset, Cr Kas/Bank.
+     */
+    protected function buildPurchaseCashEntries(Asset $asset, BusinessUnit $bu, $coaAsset, string $paymentCoaKey): array
+    {
+        $coaPayment = $bu->getCoaByKey($paymentCoaKey);
+        if (!$coaPayment) {
+            throw new \RuntimeException("COA mapping '{$paymentCoaKey}' tidak ditemukan.");
+        }
+
+        return [
+            [
+                'coa_code' => $coaAsset->code,
+                'description' => "Pembelian aset {$asset->name}",
+                'debit' => $asset->acquisition_cost,
+                'credit' => 0,
+            ],
+            [
+                'coa_code' => $coaPayment->code,
+                'description' => "Pembayaran aset {$asset->name}",
+                'debit' => 0,
+                'credit' => $asset->acquisition_cost,
+            ],
+        ];
+    }
+
+    /**
+     * Pembelian Kredit: Dr Aset, Cr Hutang Usaha.
+     */
+    protected function buildPurchaseCreditEntries(Asset $asset, BusinessUnit $bu, $coaAsset): array
+    {
+        $coaHutang = $bu->getCoaByKey('hutang_usaha');
+        if (!$coaHutang) {
+            throw new \RuntimeException("COA mapping 'hutang_usaha' tidak ditemukan.");
+        }
+
+        return [
+            [
+                'coa_code' => $coaAsset->code,
+                'description' => "Pembelian kredit aset {$asset->name}",
+                'debit' => $asset->acquisition_cost,
+                'credit' => 0,
+            ],
+            [
+                'coa_code' => $coaHutang->code,
+                'description' => "Hutang usaha atas aset {$asset->name}",
+                'debit' => 0,
+                'credit' => $asset->acquisition_cost,
+            ],
+        ];
+    }
+
+    // ─── Disposal Journal ───────────────────────────────────────────
+
+    /**
+     * Buat jurnal disposal aset.
+     * Menggunakan COA per-kategori aset, gain/loss ke akun khusus aset.
+     *
+     * @throws \RuntimeException jika COA mapping / periode tidak ditemukan
+     */
+    public function createDisposalJournal(AssetDisposal $disposal): JournalMaster
     {
         $asset = $disposal->asset;
         $businessUnit = $asset->businessUnit;
+        $category = $asset->assetCategory;
 
-        $coaAsset = $businessUnit->getCoaByKey('peralatan');
-        $coaAccumulated = $businessUnit->getCoaByKey('akumulasi_penyusutan');
-        $coaCash = $businessUnit->getCoaByKey('kas_utama');
-
-        if (!$coaAsset || !$coaAccumulated) {
-            return null;
+        // Resolve category-specific COA
+        $coaAssetKey = $category->coa_asset_key;
+        $coaAsset = $businessUnit->getCoaByKey($coaAssetKey);
+        if (!$coaAsset) {
+            throw new \RuntimeException("COA mapping '{$coaAssetKey}' tidak ditemukan.");
         }
 
         $period = Period::where('start_date', '<=', $disposal->disposal_date)
@@ -267,36 +449,47 @@ class AssetService
             ->first();
 
         if (!$period) {
-            return null;
+            throw new \RuntimeException(
+                "Periode akuntansi belum tersedia untuk tanggal " . $disposal->disposal_date->format('d/m/Y') . "."
+            );
         }
 
         $accumulated = $this->getAccumulatedDepreciation($asset);
         $entries = [];
 
-        // Debit: Akumulasi Penyusutan (hapus)
+        // Dr: Akumulasi Penyusutan (hapus)
         if ($accumulated > 0) {
+            $accumKey = $category->coa_accumulated_dep_key;
+            $coaAccum = $businessUnit->getCoaByKey($accumKey);
+            if (!$coaAccum) {
+                throw new \RuntimeException("COA mapping '{$accumKey}' tidak ditemukan.");
+            }
             $entries[] = [
-                'coa_code' => $coaAccumulated->code,
-                'description' => 'Hapus akumulasi penyusutan ' . $asset->name,
+                'coa_code' => $coaAccum->code,
+                'description' => "Hapus akumulasi penyusutan {$asset->name}",
                 'debit' => $accumulated,
                 'credit' => 0,
             ];
         }
 
-        // Debit: Kas (jika dijual)
-        if ($disposal->disposal_amount > 0 && $coaCash) {
+        // Dr: Kas (jika dijual)
+        if ($disposal->disposal_amount > 0) {
+            $coaCash = $businessUnit->getCoaByKey('kas_utama');
+            if (!$coaCash) {
+                throw new \RuntimeException("COA mapping 'kas_utama' tidak ditemukan.");
+            }
             $entries[] = [
                 'coa_code' => $coaCash->code,
-                'description' => 'Penerimaan disposal ' . $asset->name,
+                'description' => "Penerimaan disposal {$asset->name}",
                 'debit' => $disposal->disposal_amount,
                 'credit' => 0,
             ];
         }
 
-        // Credit: Aset (hapus)
+        // Cr: Aset (hapus nilai perolehan)
         $entries[] = [
             'coa_code' => $coaAsset->code,
-            'description' => 'Pelepasan aset ' . $asset->name,
+            'description' => "Pelepasan aset {$asset->name}",
             'debit' => 0,
             'credit' => $asset->acquisition_cost,
         ];
@@ -304,35 +497,40 @@ class AssetService
         // Gain/Loss
         $gainLoss = $disposal->gain_loss;
         if ($gainLoss > 0) {
-            $coaGain = $businessUnit->getCoaByKey('pendapatan_lain');
-            if ($coaGain) {
-                $entries[] = [
-                    'coa_code' => $coaGain->code,
-                    'description' => 'Laba disposal ' . $asset->name,
-                    'debit' => 0,
-                    'credit' => $gainLoss,
-                ];
+            $coaGain = $businessUnit->getCoaByKey('laba_penjualan_aset');
+            if (!$coaGain) {
+                throw new \RuntimeException("COA mapping 'laba_penjualan_aset' tidak ditemukan.");
             }
+            $entries[] = [
+                'coa_code' => $coaGain->code,
+                'description' => "Laba disposal {$asset->name}",
+                'debit' => 0,
+                'credit' => $gainLoss,
+            ];
         } elseif ($gainLoss < 0) {
-            $coaLoss = $businessUnit->getCoaByKey('beban_lain');
-            if ($coaLoss) {
-                $entries[] = [
-                    'coa_code' => $coaLoss->code,
-                    'description' => 'Rugi disposal ' . $asset->name,
-                    'debit' => abs($gainLoss),
-                    'credit' => 0,
-                ];
+            $coaLoss = $businessUnit->getCoaByKey('rugi_penjualan_aset');
+            if (!$coaLoss) {
+                throw new \RuntimeException("COA mapping 'rugi_penjualan_aset' tidak ditemukan.");
             }
+            $entries[] = [
+                'coa_code' => $coaLoss->code,
+                'description' => "Rugi disposal {$asset->name}",
+                'debit' => abs($gainLoss),
+                'credit' => 0,
+            ];
         }
 
         // Verifikasi balance
         $totalDebit = collect($entries)->sum('debit');
         $totalCredit = collect($entries)->sum('credit');
-        if ($totalDebit != $totalCredit) {
-            return null;
+        if ($totalDebit !== $totalCredit) {
+            throw new \RuntimeException(
+                "Jurnal disposal tidak seimbang. Debit: {$totalDebit}, Kredit: {$totalCredit}."
+            );
         }
 
         $journal = $this->journalService->createJournalEntry([
+            'business_unit_id' => $businessUnit->id,
             'type' => 'general',
             'journal_date' => $disposal->disposal_date->format('Y-m-d'),
             'reference' => 'DSP/' . $asset->code,

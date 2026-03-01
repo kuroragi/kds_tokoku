@@ -5,6 +5,7 @@ namespace App\Livewire\Asset;
 use App\Models\Asset;
 use App\Models\AssetTransfer;
 use App\Services\BusinessUnitService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class AssetTransferForm extends Component
@@ -112,20 +113,28 @@ class AssetTransferForm extends Component
             'notes' => $this->notes ?: null,
         ];
 
-        if ($this->isEditing) {
-            AssetTransfer::findOrFail($this->transferId)->update($data);
-        } else {
-            AssetTransfer::create($data);
+        DB::beginTransaction();
+        try {
+            if ($this->isEditing) {
+                AssetTransfer::findOrFail($this->transferId)->update($data);
+            } else {
+                AssetTransfer::create($data);
 
-            // Update lokasi aset
-            $asset = Asset::find($this->asset_id);
-            if ($asset) {
-                $updateData = ['location' => $this->to_location];
-                if ($this->to_business_unit_id) {
-                    $updateData['business_unit_id'] = $this->to_business_unit_id;
+                // Update lokasi aset
+                $asset = Asset::find($this->asset_id);
+                if ($asset) {
+                    $updateData = ['location' => $this->to_location];
+                    if ($this->to_business_unit_id) {
+                        $updateData['business_unit_id'] = $this->to_business_unit_id;
+                    }
+                    $asset->update($updateData);
                 }
-                $asset->update($updateData);
             }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->dispatch('alert', type: 'error', message: "Gagal menyimpan mutasi: {$e->getMessage()}");
+            return;
         }
 
         $action = $this->isEditing ? 'diperbarui' : 'dicatat';

@@ -7,6 +7,7 @@ use App\Models\AssetCategory;
 use App\Models\Vendor;
 use App\Services\AssetService;
 use App\Services\BusinessUnitService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -32,8 +33,11 @@ class AssetForm extends Component
     public $condition = 'good';
     public $notes = '';
 
-    // Opsi jurnal pengadaan
-    public $create_journal = false;
+    // Tipe perolehan & jurnal
+    public $acquisition_type = 'purchase_cash';
+    public $funding_source = 'equity';
+    public $initial_accumulated_depreciation = 0;
+    public $remaining_debt_amount = 0;
     public $payment_coa_key = 'kas_utama';
 
     protected $listeners = ['openAssetModal', 'editAsset'];
@@ -66,7 +70,10 @@ class AssetForm extends Component
         $this->serial_number = $asset->serial_number ?? '';
         $this->condition = $asset->condition;
         $this->notes = $asset->notes ?? '';
-        $this->create_journal = false;
+        $this->acquisition_type = $asset->acquisition_type ?? 'purchase_cash';
+        $this->funding_source = $asset->funding_source ?? 'equity';
+        $this->initial_accumulated_depreciation = $asset->initial_accumulated_depreciation ?? 0;
+        $this->remaining_debt_amount = $asset->remaining_debt_amount ?? 0;
         $this->showModal = true;
     }
 
@@ -95,7 +102,10 @@ class AssetForm extends Component
         $this->serial_number = '';
         $this->condition = 'good';
         $this->notes = '';
-        $this->create_journal = false;
+        $this->acquisition_type = 'purchase_cash';
+        $this->funding_source = 'equity';
+        $this->initial_accumulated_depreciation = 0;
+        $this->remaining_debt_amount = 0;
         $this->payment_coa_key = 'kas_utama';
         $this->resetValidation();
     }
@@ -118,7 +128,7 @@ class AssetForm extends Component
 
     protected function rules(): array
     {
-        return [
+        $rules = [
             'business_unit_id' => 'required|exists:business_units,id',
             'asset_category_id' => 'required|exists:asset_categories,id',
             'vendor_id' => 'nullable|exists:vendors,id',
@@ -131,7 +141,7 @@ class AssetForm extends Component
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'acquisition_date' => 'required|date',
-            'acquisition_cost' => 'required|integer|min:0',
+            'acquisition_cost' => 'required|integer|min:1',
             'useful_life_months' => 'required|integer|min:1|max:600',
             'salvage_value' => 'required|integer|min:0',
             'depreciation_method' => 'required|in:straight_line,declining_balance',
@@ -139,7 +149,27 @@ class AssetForm extends Component
             'serial_number' => 'nullable|string|max:100',
             'condition' => 'required|in:good,fair,poor',
             'notes' => 'nullable|string|max:1000',
+            'acquisition_type' => 'required|in:opening_balance,purchase_cash,purchase_credit',
         ];
+
+        // Conditional rules per tipe perolehan
+        if ($this->acquisition_type === 'opening_balance') {
+            $rules['funding_source'] = 'required|in:equity,debt,mixed';
+            $rules['initial_accumulated_depreciation'] = 'required|integer|min:0|lt:acquisition_cost';
+            if (in_array($this->funding_source, ['debt', 'mixed'])) {
+                $rules['remaining_debt_amount'] = 'required|integer|min:1';
+            }
+        }
+
+        if ($this->acquisition_type === 'purchase_cash') {
+            $rules['payment_coa_key'] = 'required|in:kas_utama,kas_kecil,bank_utama';
+        }
+
+        if ($this->acquisition_type === 'purchase_credit') {
+            $rules['vendor_id'] = 'required|exists:vendors,id';
+        }
+
+        return $rules;
     }
 
     public function save()
@@ -147,6 +177,18 @@ class AssetForm extends Component
         $unitId = BusinessUnitService::resolveBusinessUnitId($this->business_unit_id);
         $this->business_unit_id = $unitId;
         $this->validate();
+
+        // Validasi COA key di kategori sebelum proses
+        if (!$this->isEditing) {
+            $category = AssetCategory::find($this->asset_category_id);
+            if (!$category?->coa_asset_key) {
+                $this->addError('asset_category_id',
+                    "Kategori '{$category->name}' belum memiliki mapping COA aset. " .
+                    "Atur terlebih dahulu di menu Kategori Aset (pilih COA Preset)."
+                );
+                return;
+            }
+        }
 
         $data = [
             'business_unit_id' => $unitId,
@@ -165,28 +207,49 @@ class AssetForm extends Component
             'condition' => $this->condition,
             'status' => 'active',
             'notes' => $this->notes ?: null,
+            'acquisition_type' => $this->acquisition_type,
         ];
 
-        if ($this->isEditing) {
-            $asset = Asset::findOrFail($this->assetId);
-            $asset->update($data);
-        } else {
-            $asset = Asset::create($data);
-
-            // Buat jurnal pengadaan jika diminta
-            if ($this->create_journal && $this->acquisition_cost > 0) {
-                $service = app(AssetService::class);
-                $journal = $service->createAcquisitionJournal($asset, $this->payment_coa_key);
-                if (!$journal) {
-                    $this->dispatch('alert', type: 'warning', message: 'Aset berhasil dibuat, tetapi jurnal pengadaan gagal (periksa mapping COA & periode).');
-                    $this->dispatch('refreshAssetList');
-                    $this->closeModal();
-                    return;
-                }
-            }
+        // Tambahkan field khusus saldo awal
+        if ($this->acquisition_type === 'opening_balance') {
+            $data['funding_source'] = $this->funding_source;
+            $data['initial_accumulated_depreciation'] = $this->initial_accumulated_depreciation;
+            $data['remaining_debt_amount'] = in_array($this->funding_source, ['debt', 'mixed'])
+                ? $this->remaining_debt_amount : 0;
         }
 
-        $action = $this->isEditing ? 'diperbarui' : 'dibuat';
+        if ($this->isEditing) {
+            DB::beginTransaction();
+            try {
+                $asset = Asset::findOrFail($this->assetId);
+                $asset->update($data);
+                DB::commit();
+            } catch (\Throwable $e) {
+                DB::rollBack();
+                $this->dispatch('alert', type: 'error', message: "Gagal memperbarui aset: {$e->getMessage()}");
+                return;
+            }
+            $action = 'diperbarui';
+        } else {
+            DB::beginTransaction();
+            try {
+                $asset = Asset::create($data);
+
+                // Jurnal pengadaan SELALU dibuat untuk aset baru
+                $service = app(AssetService::class);
+                $paymentKey = $this->acquisition_type === 'purchase_cash' ? $this->payment_coa_key : null;
+                $service->createAcquisitionJournal($asset, $paymentKey);
+
+                DB::commit();
+            } catch (\Throwable $e) {
+                DB::rollBack();
+                $this->dispatch('alert', type: 'error', message: "Gagal membuat aset & jurnal: {$e->getMessage()}");
+                return;
+            }
+
+            $action = 'dibuat (dengan jurnal)';
+        }
+
         $this->dispatch('alert', type: 'success', message: "Aset '{$this->name}' berhasil {$action}.");
         $this->dispatch('refreshAssetList');
         $this->closeModal();
@@ -222,6 +285,8 @@ class AssetForm extends Component
             'vendors' => $this->vendors,
             'conditions' => Asset::CONDITIONS,
             'methods' => AssetCategory::DEPRECIATION_METHODS,
+            'acquisitionTypes' => Asset::ACQUISITION_TYPES,
+            'fundingSources' => Asset::FUNDING_SOURCES,
             'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),
             'paymentOptions' => [
                 'kas_utama' => 'Kas Utama',

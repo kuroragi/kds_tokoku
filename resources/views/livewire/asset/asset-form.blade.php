@@ -146,33 +146,91 @@
                             </div>
                         </div>
 
-                        {{-- Jurnal Pengadaan --}}
-                        @if(!$isEditing)
-                        <div class="border rounded p-3 bg-light">
-                            <div class="form-check mb-2">
-                                <input type="checkbox" class="form-check-input" wire:model.live="create_journal" id="createJournal">
-                                <label class="form-check-label fw-medium" for="createJournal">
-                                    <i class="ri-file-list-3-line me-1"></i> Buat jurnal pengadaan otomatis
-                                </label>
+                        {{-- Tipe Perolehan & Jurnal --}}
+                        <h6 class="text-primary mb-3"><i class="ri-exchange-funds-line"></i> Tipe Perolehan</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Tipe Perolehan <span class="text-danger">*</span></label>
+                                <select class="form-select @error('acquisition_type') is-invalid @enderror"
+                                    wire:model.live="acquisition_type" @if($isEditing) disabled @endif>
+                                    @foreach($acquisitionTypes as $key => $label)
+                                    <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                @error('acquisition_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
-                            @if($create_journal)
-                            <div class="row g-3 mt-1">
-                                <div class="col-md-4">
-                                    <label class="form-label small">Sumber Pembayaran</label>
-                                    <select class="form-select form-select-sm" wire:model="payment_coa_key">
-                                        @foreach($paymentOptions as $key => $label)
-                                        <option value="{{ $key }}">{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-8">
-                                    <div class="alert alert-info py-2 small mb-0 mt-3">
-                                        <i class="ri-information-line me-1"></i>
-                                        Jurnal umum akan dibuat: Debit Peralatan, Kredit {{ $paymentOptions[$payment_coa_key] ?? 'Kas' }}
-                                    </div>
+
+                            {{-- Purchase Cash: pilih sumber pembayaran --}}
+                            @if($acquisition_type === 'purchase_cash')
+                            <div class="col-md-4">
+                                <label class="form-label">Sumber Pembayaran <span class="text-danger">*</span></label>
+                                <select class="form-select @error('payment_coa_key') is-invalid @enderror" wire:model="payment_coa_key">
+                                    @foreach($paymentOptions as $key => $label)
+                                    <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                @error('payment_coa_key') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <div class="alert alert-info py-2 small mb-0 mt-4">
+                                    <i class="ri-information-line me-1"></i>
+                                    Jurnal: <strong>Dr</strong> Aset (per kategori), <strong>Cr</strong> {{ $paymentOptions[$payment_coa_key] ?? 'Kas' }}
                                 </div>
                             </div>
                             @endif
+
+                            {{-- Purchase Credit: info --}}
+                            @if($acquisition_type === 'purchase_credit')
+                            <div class="col-md-8">
+                                <div class="alert alert-info py-2 small mb-0 mt-4">
+                                    <i class="ri-information-line me-1"></i>
+                                    Jurnal: <strong>Dr</strong> Aset (per kategori), <strong>Cr</strong> Hutang Usaha.
+                                    Vendor wajib dipilih untuk pembelian kredit.
+                                </div>
+                            </div>
+                            @endif
+                        </div>
+
+                        {{-- Fields khusus Saldo Awal --}}
+                        @if($acquisition_type === 'opening_balance')
+                        <div class="border rounded p-3 bg-light mb-3">
+                            <h6 class="text-warning mb-3"><i class="ri-history-line"></i> Detail Saldo Awal</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Sumber Dana <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('funding_source') is-invalid @enderror" wire:model.live="funding_source">
+                                        @foreach($fundingSources as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('funding_source') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Akum. Penyusutan Awal</label>
+                                    <input type="number" class="form-control @error('initial_accumulated_depreciation') is-invalid @enderror"
+                                        wire:model="initial_accumulated_depreciation" min="0">
+                                    <small class="text-muted">Penyusutan yang sudah terjadi sebelum sistem</small>
+                                    @error('initial_accumulated_depreciation') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                @if(in_array($funding_source, ['debt', 'mixed']))
+                                <div class="col-md-4">
+                                    <label class="form-label">Sisa Hutang <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control @error('remaining_debt_amount') is-invalid @enderror"
+                                        wire:model="remaining_debt_amount" min="0">
+                                    <small class="text-muted">Sisa hutang bank/leasing atas aset ini</small>
+                                    @error('remaining_debt_amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                @endif
+                            </div>
+                            <div class="alert alert-warning py-2 small mb-0 mt-3">
+                                <i class="ri-information-line me-1"></i>
+                                Jurnal: <strong>Dr</strong> Aset,
+                                @if($initial_accumulated_depreciation > 0) <strong>Cr</strong> Akum. Penyusutan, @endif
+                                @if(in_array($funding_source, ['debt', 'mixed']) && $remaining_debt_amount > 0)
+                                    <strong>Cr</strong> Hutang Bank,
+                                @endif
+                                <strong>Cr</strong> Modal Pemilik (sisa)
+                            </div>
                         </div>
                         @endif
                     </div>

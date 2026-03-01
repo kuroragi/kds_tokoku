@@ -72,6 +72,47 @@
                                 </div>
                             </div>
                         </div>
+
+                        {{-- COA Mapping per Kategori --}}
+                        <hr class="my-3">
+                        <h6 class="text-primary mb-3"><i class="ri-links-line"></i> Mapping Akun COA</h6>
+                        <div class="alert alert-info py-2 small mb-3">
+                            <i class="ri-information-line me-1"></i>
+                            Mapping ini menentukan akun COA mana yang digunakan untuk jurnal otomatis (pengadaan, penyusutan, disposal) aset pada kategori ini.
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Preset Cepat</label>
+                                <select class="form-select form-select-sm" wire:model.live="coa_preset">
+                                    <option value="">-- Pilih Preset (opsional) --</option>
+                                    @foreach($coaPresets as $key => $preset)
+                                    <option value="{{ $key }}">{{ ucfirst($key) }}</option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">Pilih preset untuk mengisi mapping COA secara otomatis</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Akun Aset <span class="text-primary"><i class="ri-arrow-right-up-line"></i></span></label>
+                                <input type="text" class="form-control form-control-sm @error('coa_asset_key') is-invalid @enderror"
+                                    wire:model="coa_asset_key" placeholder="cth: aset_kendaraan" readonly style="background: #f8f9fa;">
+                                @error('coa_asset_key') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <small class="text-muted">COA yang di-debit saat pengadaan</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Akun Akum. Penyusutan <span class="text-warning"><i class="ri-arrow-right-down-line"></i></span></label>
+                                <input type="text" class="form-control form-control-sm @error('coa_accumulated_dep_key') is-invalid @enderror"
+                                    wire:model="coa_accumulated_dep_key" placeholder="cth: akum_peny_kendaraan" readonly style="background: #f8f9fa;">
+                                @error('coa_accumulated_dep_key') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <small class="text-muted">COA yang di-kredit saat penyusutan</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Akun Beban Penyusutan <span class="text-danger"><i class="ri-arrow-left-up-line"></i></span></label>
+                                <input type="text" class="form-control form-control-sm @error('coa_expense_dep_key') is-invalid @enderror"
+                                    wire:model="coa_expense_dep_key" placeholder="cth: beban_peny_kendaraan" readonly style="background: #f8f9fa;">
+                                @error('coa_expense_dep_key') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <small class="text-muted">COA yang di-debit saat penyusutan</small>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer py-2">
                         <button type="button" class="btn btn-secondary btn-sm" wire:click="closeModal">Batal</button>

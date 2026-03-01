@@ -4,7 +4,9 @@ namespace App\Livewire\Asset;
 
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Services\AssetService;
 use App\Services\BusinessUnitService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class AssetList extends Component
@@ -16,7 +18,7 @@ class AssetList extends Component
     public $sortField = 'code';
     public $sortDirection = 'asc';
 
-    protected $listeners = ['refreshAssetList' => '$refresh'];
+    protected $listeners = ['refreshAssetList' => '$refresh', 'retryJournal' => 'retryJournal'];
 
     public function sortBy($field)
     {
@@ -45,6 +47,33 @@ class AssetList extends Component
         return $query->orderBy('name')->get();
     }
 
+    /**
+     * Retry pembuatan jurnal untuk aset yang gagal/belum punya jurnal.
+     */
+    public function retryJournal(int $id)
+    {
+        $asset = Asset::with('assetCategory')->findOrFail($id);
+
+        if ($asset->journal_master_id) {
+            $this->dispatch('alert', type: 'info', message: "Aset '{$asset->name}' sudah memiliki jurnal.");
+            return;
+        }
+
+        if (!$asset->assetCategory?->coa_asset_key) {
+            $this->dispatch('alert', type: 'error', message: "Kategori '{$asset->assetCategory?->name}' belum memiliki mapping COA. Atur di menu Kategori Aset.");
+            return;
+        }
+
+        try {
+            $service = app(AssetService::class);
+            $paymentKey = $asset->acquisition_type === 'purchase_cash' ? 'kas_utama' : null;
+            $service->createAcquisitionJournal($asset, $paymentKey);
+            $this->dispatch('alert', type: 'success', message: "Jurnal pengadaan aset '{$asset->name}' berhasil dibuat.");
+        } catch (\Throwable $e) {
+            $this->dispatch('alert', type: 'error', message: "Gagal membuat jurnal: {$e->getMessage()}");
+        }
+    }
+
     public function deleteAsset($id)
     {
         $asset = Asset::findOrFail($id);
@@ -54,8 +83,23 @@ class AssetList extends Component
             return;
         }
 
-        $name = $asset->name;
-        $asset->delete();
+        DB::beginTransaction();
+        try {
+            // Hapus jurnal pengadaan jika ada
+            if ($asset->journal_master_id) {
+                $asset->journalMaster?->journals()?->delete();
+                $asset->journalMaster?->delete();
+            }
+
+            $name = $asset->name;
+            $asset->delete();
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->dispatch('alert', type: 'error', message: "Gagal menghapus aset: {$e->getMessage()}");
+            return;
+        }
+
         $this->dispatch('alert', type: 'success', message: "Aset '{$name}' berhasil dihapus.");
     }
 

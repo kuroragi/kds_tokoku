@@ -7,7 +7,6 @@ use App\Models\Journal;
 use App\Models\COA;
 use App\Models\Period;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 
 class JournalService
 {
@@ -65,11 +64,14 @@ class JournalService
             ]);
             
             // Create journal details
+            $businessUnitId = $journalMaster->business_unit_id;
             foreach ($data['entries'] as $index => $entry) {
-                $coa = COA::where('code', $entry['coa_code'])->first();
+                $coa = COA::where('code', $entry['coa_code'])
+                    ->where('business_unit_id', $businessUnitId)
+                    ->first();
                 
                 if (!$coa) {
-                    throw new \Exception("COA with code '{$entry['coa_code']}' not found.");
+                    throw new \Exception("COA dengan kode '{$entry['coa_code']}' tidak ditemukan untuk unit usaha ini.");
                 }
                 
                 Journal::create([

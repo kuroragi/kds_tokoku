@@ -4,6 +4,7 @@ namespace App\Livewire\NameCard;
 
 use App\Models\Vendor;
 use App\Services\BusinessUnitService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -171,17 +172,25 @@ class VendorForm extends Component
             'is_active' => $this->is_active,
         ];
 
-        if ($this->isEditing) {
-            $vendor = Vendor::findOrFail($this->vendorId);
-            $vendor->update($data);
-        } else {
-            $vendor = Vendor::create($data);
+        DB::beginTransaction();
+        try {
+            if ($this->isEditing) {
+                $vendor = Vendor::findOrFail($this->vendorId);
+                $vendor->update($data);
+            } else {
+                $vendor = Vendor::create($data);
 
-            // Auto-attach to business unit
-            $unitId = BusinessUnitService::resolveBusinessUnitId($this->business_unit_id);
-            if ($unitId) {
-                $vendor->businessUnits()->syncWithoutDetaching([$unitId]);
+                // Auto-attach to business unit
+                $unitId = BusinessUnitService::resolveBusinessUnitId($this->business_unit_id);
+                if ($unitId) {
+                    $vendor->businessUnits()->syncWithoutDetaching([$unitId]);
+                }
             }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->dispatch('alert', type: 'error', message: "Gagal menyimpan vendor: {$e->getMessage()}");
+            return;
         }
 
         $action = $this->isEditing ? 'diperbarui' : 'dibuat';

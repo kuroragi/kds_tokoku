@@ -2,10 +2,9 @@
 
 namespace App\Livewire\Asset;
 
-use App\Models\Asset;
 use App\Models\AssetDisposal;
-use App\Services\AssetService;
 use App\Services\BusinessUnitService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class AssetDisposalList extends Component
@@ -38,12 +37,21 @@ class AssetDisposalList extends Component
         $disposal = AssetDisposal::with('asset')->findOrFail($id);
         $asset = $disposal->asset;
 
-        // Restore asset status back to active
-        if ($asset && $asset->status === 'disposed') {
-            $asset->update(['status' => 'active']);
+        DB::beginTransaction();
+        try {
+            // Restore asset status back to active
+            if ($asset && $asset->status === 'disposed') {
+                $asset->update(['status' => 'active']);
+            }
+
+            $disposal->delete();
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->dispatch('alert', type: 'error', message: "Gagal menghapus disposal: {$e->getMessage()}");
+            return;
         }
 
-        $disposal->delete();
         $this->dispatch('alert', type: 'success', message: 'Catatan disposal berhasil dihapus dan aset dikembalikan.');
     }
 

@@ -27,6 +27,10 @@ class Asset extends Model
         'serial_number',
         'condition',
         'status',
+        'acquisition_type',
+        'funding_source',
+        'initial_accumulated_depreciation',
+        'remaining_debt_amount',
         'journal_master_id',
         'notes',
     ];
@@ -36,6 +40,8 @@ class Asset extends Model
         'acquisition_cost' => 'integer',
         'useful_life_months' => 'integer',
         'salvage_value' => 'integer',
+        'initial_accumulated_depreciation' => 'integer',
+        'remaining_debt_amount' => 'integer',
     ];
 
     public const STATUSES = [
@@ -48,6 +54,18 @@ class Asset extends Model
         'good' => 'Baik',
         'fair' => 'Cukup',
         'poor' => 'Buruk',
+    ];
+
+    public const ACQUISITION_TYPES = [
+        'opening_balance' => 'Saldo Awal',
+        'purchase_cash' => 'Pembelian Tunai',
+        'purchase_credit' => 'Pembelian Kredit',
+    ];
+
+    public const FUNDING_SOURCES = [
+        'equity' => 'Modal Pemilik',
+        'debt' => 'Hutang',
+        'mixed' => 'Campuran (Modal + Hutang)',
     ];
 
     // Relationships
@@ -94,12 +112,17 @@ class Asset extends Model
     // Accessors
     public function getAccumulatedDepreciationAttribute(): int
     {
-        return (int) $this->depreciations()->sum('depreciation_amount');
+        return $this->initial_accumulated_depreciation + (int) $this->depreciations()->sum('depreciation_amount');
     }
 
     public function getBookValueAttribute(): int
     {
         return max(0, $this->acquisition_cost - $this->accumulated_depreciation);
+    }
+
+    public function getIsOpeningBalanceAttribute(): bool
+    {
+        return $this->acquisition_type === 'opening_balance';
     }
 
     // Scopes

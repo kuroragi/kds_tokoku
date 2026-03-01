@@ -2,6 +2,7 @@
 
 namespace App\Livewire\UserManagement;
 
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -75,20 +76,29 @@ class RoleList extends Component
             'roleName.required' => 'Nama role wajib diisi.',
         ]);
 
-        if ($this->isEditing) {
-            $role = Role::findOrFail($this->roleId);
+        DB::beginTransaction();
+        try {
+            if ($this->isEditing) {
+                $role = Role::findOrFail($this->roleId);
 
-            if ($role->name === 'superadmin') {
-                $this->dispatch('alert', type: 'error', message: 'Role superadmin tidak dapat diubah namanya.');
-                return;
+                if ($role->name === 'superadmin') {
+                    $this->dispatch('alert', type: 'error', message: 'Role superadmin tidak dapat diubah namanya.');
+                    DB::rollBack();
+                    return;
+                }
+
+                $role->update(['name' => $this->roleName]);
+            } else {
+                $role = Role::create(['name' => $this->roleName, 'guard_name' => 'web']);
             }
 
-            $role->update(['name' => $this->roleName]);
-        } else {
-            $role = Role::create(['name' => $this->roleName, 'guard_name' => 'web']);
+            $role->syncPermissions($this->selectedPermissions);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->dispatch('alert', type: 'error', message: "Gagal menyimpan role: {$e->getMessage()}");
+            return;
         }
-
-        $role->syncPermissions($this->selectedPermissions);
 
         $action = $this->isEditing ? 'diperbarui' : 'dibuat';
         $this->dispatch('alert', type: 'success', message: "Role '{$role->name}' berhasil {$action}.");

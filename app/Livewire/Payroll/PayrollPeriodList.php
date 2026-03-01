@@ -4,6 +4,7 @@ namespace App\Livewire\Payroll;
 
 use App\Models\PayrollPeriod;
 use App\Services\BusinessUnitService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class PayrollPeriodList extends Component
@@ -39,12 +40,22 @@ class PayrollPeriodList extends Component
             $this->dispatch('alert', type: 'error', message: 'Payroll yang sudah dibayar tidak dapat dihapus.');
             return;
         }
-        $name = $period->name;
-        $period->entries()->each(function ($entry) {
-            $entry->details()->delete();
-            $entry->forceDelete();
-        });
-        $period->forceDelete();
+
+        DB::beginTransaction();
+        try {
+            $name = $period->name;
+            $period->entries()->each(function ($entry) {
+                $entry->details()->delete();
+                $entry->forceDelete();
+            });
+            $period->forceDelete();
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->dispatch('alert', type: 'error', message: "Gagal menghapus payroll: {$e->getMessage()}");
+            return;
+        }
+
         $this->dispatch('alert', type: 'success', message: "Payroll '{$name}' berhasil dihapus.");
     }
 

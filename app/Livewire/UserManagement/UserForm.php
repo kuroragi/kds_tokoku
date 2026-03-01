@@ -4,6 +4,7 @@ namespace App\Livewire\UserManagement;
 
 use App\Models\BusinessUnit;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -119,25 +120,33 @@ class UserForm extends Component
             $data['password'] = Hash::make($this->password);
         }
 
-        if ($this->isEditing) {
-            $user = User::findOrFail($this->userId);
-            $user->update($data);
-        } else {
-            // Auto-verify team members added by existing users
-            $data['email_verified_at'] = now();
-            $data['skip_email_verification'] = true;
+        DB::beginTransaction();
+        try {
+            if ($this->isEditing) {
+                $user = User::findOrFail($this->userId);
+                $user->update($data);
+            } else {
+                // Auto-verify team members added by existing users
+                $data['email_verified_at'] = now();
+                $data['skip_email_verification'] = true;
 
-            // Non-superadmin: force same business_unit_id
-            $authUser = auth()->user();
-            if (!$authUser->hasRole('superadmin')) {
-                $data['business_unit_id'] = $authUser->business_unit_id;
+                // Non-superadmin: force same business_unit_id
+                $authUser = auth()->user();
+                if (!$authUser->hasRole('superadmin')) {
+                    $data['business_unit_id'] = $authUser->business_unit_id;
+                }
+
+                $user = User::create($data);
             }
 
-            $user = User::create($data);
+            // Sync role
+            $user->syncRoles([$this->selectedRole]);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            $this->dispatch('alert', type: 'error', message: "Gagal menyimpan user: {$e->getMessage()}");
+            return;
         }
-
-        // Sync role
-        $user->syncRoles([$this->selectedRole]);
 
         $action = $this->isEditing ? 'diperbarui' : 'dibuat';
         $this->dispatch('alert', type: 'success', message: "User '{$user->name}' berhasil {$action}.");

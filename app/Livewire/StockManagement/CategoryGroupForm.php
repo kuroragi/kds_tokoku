@@ -24,6 +24,9 @@ class CategoryGroupForm extends Component
     public $coa_inventory_id = '';
     public $coa_revenue_id = '';
     public $coa_expense_id = '';
+    public $coa_inventory_key = '';
+    public $coa_revenue_key = '';
+    public $coa_expense_key = '';
     public $is_active = true;
 
     protected $listeners = ['openCategoryGroupModal', 'editCategoryGroup'];
@@ -49,6 +52,9 @@ class CategoryGroupForm extends Component
         $this->coa_inventory_id = $group->coa_inventory_id ?? '';
         $this->coa_revenue_id = $group->coa_revenue_id ?? '';
         $this->coa_expense_id = $group->coa_expense_id ?? '';
+        $this->coa_inventory_key = $group->coa_inventory_key ?? '';
+        $this->coa_revenue_key = $group->coa_revenue_key ?? '';
+        $this->coa_expense_key = $group->coa_expense_key ?? '';
         $this->is_active = $group->is_active;
         $this->showModal = true;
     }
@@ -71,6 +77,9 @@ class CategoryGroupForm extends Component
         $this->coa_inventory_id = '';
         $this->coa_revenue_id = '';
         $this->coa_expense_id = '';
+        $this->coa_inventory_key = '';
+        $this->coa_revenue_key = '';
+        $this->coa_expense_key = '';
         $this->is_active = true;
         $this->resetValidation();
     }
@@ -91,6 +100,9 @@ class CategoryGroupForm extends Component
             'coa_inventory_id' => 'nullable|exists:c_o_a_s,id',
             'coa_revenue_id' => 'nullable|exists:c_o_a_s,id',
             'coa_expense_id' => 'nullable|exists:c_o_a_s,id',
+            'coa_inventory_key' => 'nullable|string|max:50',
+            'coa_revenue_key' => 'nullable|string|max:50',
+            'coa_expense_key' => 'nullable|string|max:50',
             'is_active' => 'boolean',
         ];
     }
@@ -117,6 +129,9 @@ class CategoryGroupForm extends Component
             'coa_inventory_id' => $this->coa_inventory_id ?: null,
             'coa_revenue_id' => $this->coa_revenue_id ?: null,
             'coa_expense_id' => $this->coa_expense_id ?: null,
+            'coa_inventory_key' => $this->coa_inventory_key ?: null,
+            'coa_revenue_key' => $this->coa_revenue_key ?: null,
+            'coa_expense_key' => $this->coa_expense_key ?: null,
             'is_active' => $this->is_active,
         ];
 
@@ -151,8 +166,10 @@ class CategoryGroupForm extends Component
 
     public function getInventoryCoasProperty()
     {
+        if (!$this->business_unit_id) return collect();
         return COA::where('is_active', true)
             ->where('is_leaf_account', true)
+            ->where('business_unit_id', $this->business_unit_id)
             ->where('type', 'aktiva')
             ->orderBy('code')
             ->get();
@@ -160,8 +177,10 @@ class CategoryGroupForm extends Component
 
     public function getRevenueCoasProperty()
     {
+        if (!$this->business_unit_id) return collect();
         return COA::where('is_active', true)
             ->where('is_leaf_account', true)
+            ->where('business_unit_id', $this->business_unit_id)
             ->where('type', 'pendapatan')
             ->orderBy('code')
             ->get();
@@ -169,8 +188,10 @@ class CategoryGroupForm extends Component
 
     public function getExpenseCoasProperty()
     {
+        if (!$this->business_unit_id) return collect();
         return COA::where('is_active', true)
             ->where('is_leaf_account', true)
+            ->where('business_unit_id', $this->business_unit_id)
             ->where('type', 'beban')
             ->orderBy('code')
             ->get();
@@ -179,16 +200,50 @@ class CategoryGroupForm extends Component
     public function updatedBusinessUnitId()
     {
         $this->stock_category_id = '';
+        $this->coa_inventory_id = '';
+        $this->coa_revenue_id = '';
+        $this->coa_expense_id = '';
+    }
+
+    /**
+     * When stock category changes, auto-fill COA keys from parent category.
+     */
+    public function updatedStockCategoryId($value)
+    {
+        if ($value) {
+            $category = StockCategory::find($value);
+            if ($category) {
+                // Auto-fill key-based mapping from parent (if not already set)
+                if (!$this->coa_inventory_key && $category->coa_inventory_key) {
+                    $this->coa_inventory_key = $category->coa_inventory_key;
+                }
+                if (!$this->coa_expense_key && $category->coa_hpp_key) {
+                    $this->coa_expense_key = $category->coa_hpp_key;
+                }
+                if (!$this->coa_revenue_key && $category->coa_revenue_key) {
+                    $this->coa_revenue_key = $category->coa_revenue_key;
+                }
+            }
+        }
     }
 
     public function render()
     {
+        // Flatten account keys for select options, grouped by type
+        $defs = \App\Models\BusinessUnitCoaMapping::getAccountKeyDefinitions();
+        $inventoryKeys = collect($defs['aktiva'] ?? [])->filter(fn($d) => str_contains($d['key'], 'persediaan'));
+        $revenueKeys = collect($defs['pendapatan'] ?? []);
+        $expenseKeys = collect($defs['beban'] ?? []);
+
         return view('livewire.stock-management.category-group-form', [
             'units' => $this->units,
             'categories' => $this->categories,
             'inventoryCoas' => $this->inventoryCoas,
             'revenueCoas' => $this->revenueCoas,
             'expenseCoas' => $this->expenseCoas,
+            'inventoryKeys' => $inventoryKeys,
+            'revenueKeys' => $revenueKeys,
+            'expenseKeys' => $expenseKeys,
             'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),
         ]);
     }

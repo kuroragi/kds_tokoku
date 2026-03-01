@@ -102,8 +102,8 @@
                                 <i class="ri-file-list-line me-1"></i> Chart of Accounts
                             </a>
                         </li>
-                        <li>
-                            <a href="javascript:"><i class="ri-time-line"></i> Periode</a>
+                        <li class="{{ request()->routeIs('period.index') ? 'active' : '' }}">
+                            <a href="{{ route('period.index') }}"><i class="ri-time-line me-1"></i> Periode</a>
                         </li>
                         @planFeature('opening_balance')
                         <li class="{{ request()->routeIs('opening-balance.*') ? 'active' : '' }}">

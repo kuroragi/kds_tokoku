@@ -18,6 +18,10 @@ class StockCategoryForm extends Component
     public $code = '';
     public $name = '';
     public $type = 'barang';
+    public $coa_preset = '';
+    public $coa_inventory_key = '';
+    public $coa_hpp_key = '';
+    public $coa_revenue_key = '';
     public $description = '';
     public $is_active = true;
 
@@ -40,6 +44,10 @@ class StockCategoryForm extends Component
         $this->code = $category->code;
         $this->name = $category->name;
         $this->type = $category->type;
+        $this->coa_inventory_key = $category->coa_inventory_key ?? '';
+        $this->coa_hpp_key = $category->coa_hpp_key ?? '';
+        $this->coa_revenue_key = $category->coa_revenue_key ?? '';
+        $this->coa_preset = '';
         $this->description = $category->description ?? '';
         $this->is_active = $category->is_active;
         $this->showModal = true;
@@ -59,9 +67,35 @@ class StockCategoryForm extends Component
         $this->code = '';
         $this->name = '';
         $this->type = 'barang';
+        $this->coa_preset = '';
+        $this->coa_inventory_key = '';
+        $this->coa_hpp_key = '';
+        $this->coa_revenue_key = '';
         $this->description = '';
         $this->is_active = true;
         $this->resetValidation();
+    }
+
+    public function updatedCoaPreset($value)
+    {
+        $presets = StockCategory::COA_KEY_PRESETS;
+        if (isset($presets[$value])) {
+            $this->coa_inventory_key = $presets[$value]['coa_inventory_key'] ?? '';
+            $this->coa_hpp_key = $presets[$value]['coa_hpp_key'] ?? '';
+            $this->coa_revenue_key = $presets[$value]['coa_revenue_key'] ?? '';
+        }
+    }
+
+    public function updatedType($value)
+    {
+        // Auto-select matching preset when type changes
+        $presets = StockCategory::COA_KEY_PRESETS;
+        if (isset($presets[$value])) {
+            $this->coa_preset = $value;
+            $this->coa_inventory_key = $presets[$value]['coa_inventory_key'] ?? '';
+            $this->coa_hpp_key = $presets[$value]['coa_hpp_key'] ?? '';
+            $this->coa_revenue_key = $presets[$value]['coa_revenue_key'] ?? '';
+        }
     }
 
     protected function rules(): array
@@ -76,6 +110,9 @@ class StockCategoryForm extends Component
             ],
             'name' => 'required|string|max:255',
             'type' => 'required|in:barang,jasa,saldo',
+            'coa_inventory_key' => 'nullable|string|max:50',
+            'coa_hpp_key' => 'nullable|string|max:50',
+            'coa_revenue_key' => 'nullable|string|max:50',
             'description' => 'nullable|string|max:1000',
             'is_active' => 'boolean',
         ];
@@ -99,6 +136,9 @@ class StockCategoryForm extends Component
             'code' => $this->code,
             'name' => $this->name,
             'type' => $this->type,
+            'coa_inventory_key' => $this->coa_inventory_key ?: null,
+            'coa_hpp_key' => $this->coa_hpp_key ?: null,
+            'coa_revenue_key' => $this->coa_revenue_key ?: null,
             'description' => $this->description ?: null,
             'is_active' => $this->is_active,
         ];
@@ -126,6 +166,7 @@ class StockCategoryForm extends Component
         return view('livewire.stock-management.stock-category-form', [
             'units' => $this->units,
             'types' => StockCategory::getTypes(),
+            'coaPresets' => StockCategory::COA_KEY_PRESETS,
             'isSuperAdmin' => BusinessUnitService::isSuperAdmin(),
         ]);
     }

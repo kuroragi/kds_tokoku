@@ -16,12 +16,37 @@ class StockCategory extends Model
         'code',
         'name',
         'type',
+        'coa_inventory_key',
+        'coa_hpp_key',
+        'coa_revenue_key',
         'description',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+    ];
+
+    /**
+     * Predefined COA key mappings per stock category type.
+     * Digunakan sebagai default saat membuat kategori stok baru.
+     */
+    public const COA_KEY_PRESETS = [
+        'barang' => [
+            'coa_inventory_key' => 'persediaan_barang',
+            'coa_hpp_key'       => 'hpp',
+            'coa_revenue_key'   => 'pendapatan_utama',
+        ],
+        'jasa' => [
+            'coa_inventory_key' => null, // Jasa tidak punya persediaan
+            'coa_hpp_key'       => 'beban_lain',
+            'coa_revenue_key'   => 'pendapatan_jasa',
+        ],
+        'saldo' => [
+            'coa_inventory_key' => 'persediaan_saldo',
+            'coa_hpp_key'       => 'hpp',
+            'coa_revenue_key'   => 'pendapatan_utama',
+        ],
     ];
 
     // Relationships

@@ -140,6 +140,7 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
         Route::get('coa', [AccountingController::class, 'coa'])->name('coa');
         Route::get('journal', [AccountingController::class, 'journal'])->name('journal');
         Route::get('adjustment-journal', [AccountingController::class, 'adjustmentJournal'])->name('adjustment-journal');
+        Route::get('period', [AccountingController::class, 'period'])->name('period.index');
     });
 
     // ── General Ledger (plan: general_ledger) ──

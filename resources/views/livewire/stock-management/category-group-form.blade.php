@@ -11,7 +11,7 @@
                     <button type="button" class="btn-close btn-close-white btn-sm" wire:click="closeModal"></button>
                 </div>
                 <form wire:submit="save">
-                    <div class="modal-body">
+                    <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Unit Usaha <span class="text-danger">*</span></label>
@@ -29,7 +29,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Kategori Stok <span class="text-danger">*</span></label>
-                                <select class="form-select @error('stock_category_id') is-invalid @enderror" wire:model="stock_category_id"
+                                <select class="form-select @error('stock_category_id') is-invalid @enderror" wire:model.live="stock_category_id"
                                     {{ !$business_unit_id ? 'disabled' : '' }}>
                                     <option value="">-- Pilih Kategori --</option>
                                     @foreach($categories as $cat)
@@ -94,6 +94,43 @@
                                 </select>
                                 @error('coa_expense_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 <small class="text-muted">Tipe: Beban</small>
+                            </div>
+
+                            {{-- COA Key-based Mapping --}}
+                            <div class="col-12">
+                                <hr class="my-1">
+                                <h6 class="text-info mb-0"><i class="ri-key-2-line me-1"></i> COA Mapping (Key)</h6>
+                                <small class="text-muted">Mapping berdasarkan key akun yang didefinisikan di pengaturan unit usaha. Otomatis terisi dari kategori stok jika tersedia.</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Key Persediaan</label>
+                                <select class="form-select form-select-sm @error('coa_inventory_key') is-invalid @enderror" wire:model="coa_inventory_key">
+                                    <option value="">-- Pilih Key --</option>
+                                    @foreach($inventoryKeys as $def)
+                                    <option value="{{ $def['key'] }}">{{ $def['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('coa_inventory_key') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Key Pendapatan</label>
+                                <select class="form-select form-select-sm @error('coa_revenue_key') is-invalid @enderror" wire:model="coa_revenue_key">
+                                    <option value="">-- Pilih Key --</option>
+                                    @foreach($revenueKeys as $def)
+                                    <option value="{{ $def['key'] }}">{{ $def['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('coa_revenue_key') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Key Beban (HPP)</label>
+                                <select class="form-select form-select-sm @error('coa_expense_key') is-invalid @enderror" wire:model="coa_expense_key">
+                                    <option value="">-- Pilih Key --</option>
+                                    @foreach($expenseKeys as $def)
+                                    <option value="{{ $def['key'] }}">{{ $def['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('coa_expense_key') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="col-md-6">

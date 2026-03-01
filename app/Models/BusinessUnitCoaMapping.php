@@ -44,10 +44,12 @@ class BusinessUnitCoaMapping extends Model
                 ['key' => 'piutang_lain', 'label' => 'Piutang Lain-lain'],
                 // Persediaan
                 ['key' => 'persediaan_barang', 'label' => 'Persediaan Barang Dagang'],
+                ['key' => 'persediaan_saldo', 'label' => 'Persediaan Saldo / Pulsa / Voucher'],
                 // Biaya Dibayar Dimuka & Perlengkapan
                 ['key' => 'perlengkapan', 'label' => 'Perlengkapan'],
                 ['key' => 'sewa_dibayar_dimuka', 'label' => 'Sewa Dibayar Dimuka'],
                 ['key' => 'asuransi_dibayar_dimuka', 'label' => 'Asuransi Dibayar Dimuka'],
+                ['key' => 'beban_dibayar_dimuka', 'label' => 'Beban Dibayar Dimuka'],
                 // Pajak Dibayar Dimuka
                 ['key' => 'ppn_masukan', 'label' => 'PPN Masukan'],
                 // Aset Tetap (Berwujud)

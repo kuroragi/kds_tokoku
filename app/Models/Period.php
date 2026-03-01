@@ -12,6 +12,7 @@ class Period extends Model
     use HasFactory, SoftDeletes, Blameable;
 
     protected $fillable = [
+        'business_unit_id',
         'code',
         'name',
         'start_date',
@@ -35,6 +36,11 @@ class Period extends Model
     ];
 
     // Relationships
+    public function businessUnit()
+    {
+        return $this->belongsTo(BusinessUnit::class);
+    }
+
     public function journalMasters()
     {
         return $this->hasMany(JournalMaster::class, 'id_period');
@@ -71,6 +77,11 @@ class Period extends Model
         $now = now();
         return $query->where('start_date', '<=', $now)
                     ->where('end_date', '>=', $now);
+    }
+
+    public function scopeByBusinessUnit($query, $businessUnitId)
+    {
+        return $query->where('business_unit_id', $businessUnitId);
     }
 
     // Accessors

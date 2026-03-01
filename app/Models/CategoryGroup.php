@@ -20,6 +20,9 @@ class CategoryGroup extends Model
         'coa_inventory_id',
         'coa_revenue_id',
         'coa_expense_id',
+        'coa_inventory_key',
+        'coa_revenue_key',
+        'coa_expense_key',
         'is_active',
     ];
 

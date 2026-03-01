@@ -49,4 +49,8 @@ class AccountingController extends Controller
     public function taxReport(){
         return view('pages.tax.report');
     }
+
+    public function period(){
+        return view('pages.accounting.period');
+    }
 }

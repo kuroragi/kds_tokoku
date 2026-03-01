@@ -41,4 +41,18 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Gateway
+    |--------------------------------------------------------------------------
+    |
+    | Konfigurasi payment gateway yang aktif.
+    | Supported: "manual", (future: "midtrans", "xendit")
+    |
+    */
+
+    'payment' => [
+        'gateway' => env('PAYMENT_GATEWAY', 'manual'),
+    ],
+
 ];

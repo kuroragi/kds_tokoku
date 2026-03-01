@@ -37,11 +37,23 @@ class CoaList extends Component
     }
 
     /**
-     * Get COAs with search and filters - display all data
+     * Resolve the current user's business unit id.
+     */
+    protected function getBusinessUnitId(): ?int
+    {
+        return Auth::user()?->business_unit_id;
+    }
+
+    /**
+     * Get COAs with search and filters - scoped to current business unit.
      */
     public function getCoasProperty()
     {
-        $query = COA::with('parent');
+        $businessUnitId = $this->getBusinessUnitId();
+
+        $query = COA::with('parent')
+            ->when($businessUnitId, fn($q) => $q->where('business_unit_id', $businessUnitId))
+            ->when(!$businessUnitId, fn($q) => $q->whereNull('business_unit_id'));
 
         // Apply search
         if ($this->search) {

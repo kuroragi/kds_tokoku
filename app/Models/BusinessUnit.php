@@ -43,6 +43,11 @@ class BusinessUnit extends Model
         return $this->hasMany(BusinessUnitCoaMapping::class);
     }
 
+    public function coas()
+    {
+        return $this->hasMany(COA::class);
+    }
+
     public function stockCategories()
     {
         return $this->hasMany(StockCategory::class);

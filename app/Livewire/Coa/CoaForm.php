@@ -77,11 +77,21 @@ class CoaForm extends Component
         }
     }
 
+    protected function getBusinessUnitId(): ?int
+    {
+        return auth()->user()?->business_unit_id;
+    }
+
     protected function recalculateOrderOptions(): void
     {
+        $businessUnitId = $this->getBusinessUnitId();
+
         $query = $this->parent_code
             ? COA::where('parent_code', $this->parent_code)
             : COA::whereNull('parent_code');
+
+        $query->when($businessUnitId, fn($q) => $q->where('business_unit_id', $businessUnitId))
+              ->when(!$businessUnitId, fn($q) => $q->whereNull('business_unit_id'));
 
         // When editing, exclude current item from sibling count
         // then the max becomes siblingCount (others) + 1 (self) = siblingCount + 1... 
@@ -179,6 +189,7 @@ class CoaForm extends Component
     protected function getFormData(): array
     {
         return [
+            'business_unit_id' => $this->getBusinessUnitId(),
             'code' => $this->code,
             'name' => $this->name,
             'type' => $this->type,
@@ -216,7 +227,7 @@ class CoaForm extends Component
     public function getParentOptionsProperty(COAService $coaService)
     {
         $excludeId = $this->isEditing ? $this->coaId : null;
-        return $coaService->getParentOptions($excludeId);
+        return $coaService->getParentOptions($excludeId, $this->getBusinessUnitId());
     }
 
     public function render()

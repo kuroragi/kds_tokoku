@@ -30,10 +30,9 @@ class DatabaseSeeder extends Seeder
         ])->assignRole('superadmin');
 
         $this->call([
-            COASeeder::class,
+            COATemplateSeeder::class,
             PeriodSeeder::class,
             RolePermissionSeeder::class,
-            BusinessUnitSeeder::class,
             UnitOfMeasureSeeder::class,
             PositionSeeder::class,
             SystemSettingsSeeder::class,

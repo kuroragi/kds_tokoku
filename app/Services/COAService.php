@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\COA;
+use App\Models\CoaTemplate;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,14 +20,20 @@ class COAService
         $this->logger = new ActivityLogger(storage_path('logs/activity'));
     }
 
+    // ── CRUD ────────────────────────────────────────────────────
+
     public function create(array $data): COA
     {
         try {
             return DB::transaction(function () use ($data) {
                 $level = $this->calculateLevel($data['parent_code']);
-                $this->reorderSiblings($data['parent_code'] ?? null, $data['order']);
+                $businessUnitId = $data['business_unit_id'] ?? null;
+
+                $this->reorderSiblings($data['parent_code'] ?? null, $data['order'], null, $businessUnitId);
 
                 $coa = COA::create([
+                    'business_unit_id' => $businessUnitId,
+                    'template_id' => $data['template_id'] ?? null,
                     'code' => $data['code'],
                     'name' => $data['name'],
                     'type' => $data['type'],
@@ -36,6 +43,7 @@ class COAService
                     'description' => $data['description'] ?? null,
                     'is_active' => $data['is_active'] ?? true,
                     'is_leaf_account' => $data['is_leaf_account'] ?? true,
+                    'is_locked' => $data['is_locked'] ?? false,
                 ]);
 
                 $this->log('info', 'coa_created', 'COA berhasil dibuat', $coa);
@@ -62,9 +70,17 @@ class COAService
     public function update(COA $coa, array $data): COA
     {
         try {
+            if ($coa->is_locked) {
+                throw ValidationException::withMessages([
+                    'code' => 'Akun terkunci (dari template) dan tidak dapat diubah.',
+                ]);
+            }
+
             return DB::transaction(function () use ($coa, $data) {
                 $level = $this->calculateLevel($data['parent_code'] ?? null);
-                $this->reorderSiblings($data['parent_code'] ?? null, $data['order'], $coa->id);
+                $businessUnitId = $coa->business_unit_id;
+
+                $this->reorderSiblings($data['parent_code'] ?? null, $data['order'], $coa->id, $businessUnitId);
 
                 $coa->update([
                     'code' => $data['code'],
@@ -85,6 +101,9 @@ class COAService
                 return $coa;
             });
 
+        } catch (ValidationException $e) {
+            throw $e;
+
         } catch (QueryException $e) {
             $this->log('error', 'coa_update_failed', 'Gagal memperbarui COA: database error', $coa, $e);
 
@@ -104,6 +123,12 @@ class COAService
     public function delete(COA $coa): void
     {
         try {
+            if ($coa->is_locked) {
+                throw ValidationException::withMessages([
+                    'code' => 'Akun terkunci (dari template) dan tidak dapat dihapus.',
+                ]);
+            }
+
             if ($coa->children()->exists()) {
                 throw ValidationException::withMessages([
                     'code' => 'Tidak dapat menghapus akun yang memiliki sub-akun.',
@@ -120,8 +145,9 @@ class COAService
 
             DB::transaction(function () use ($coa) {
                 $parentCode = $coa->parent_code;
+                $businessUnitId = $coa->business_unit_id;
                 $coa->delete();
-                $this->normalizeOrder($parentCode);
+                $this->normalizeOrder($parentCode, $businessUnitId);
             });
 
             $this->logger->log([
@@ -133,6 +159,7 @@ class COAService
                     'coa_id' => $coaData['id'],
                     'coa_code' => $coaData['code'],
                     'coa_name' => $coaData['name'],
+                    'business_unit_id' => $coaData['business_unit_id'] ?? null,
                     'user_id' => Auth::id(),
                     'user_name' => Auth::user()?->name,
                 ]
@@ -179,13 +206,88 @@ class COAService
         }
     }
 
-    public function getParentOptions(?int $excludeId = null)
+    public function getParentOptions(?int $excludeId = null, ?int $businessUnitId = null)
     {
         return COA::where('is_leaf_account', false)
-            ->when($excludeId, fn($query) => $query->where('id', '!=', $excludeId))
+            ->when($businessUnitId, fn($q) => $q->where('business_unit_id', $businessUnitId))
+            ->when(!$businessUnitId, fn($q) => $q->whereNull('business_unit_id'))
+            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
             ->orderBy('code')
             ->get();
     }
+
+    // ── Template Cloning ────────────────────────────────────────
+
+    /**
+     * Clone all active templates into a business unit's COA.
+     * Idempotent — skips if the unit already has COA rows.
+     */
+    public function cloneTemplatesForBusinessUnit(int $businessUnitId): int
+    {
+        $existingCount = COA::where('business_unit_id', $businessUnitId)->count();
+
+        if ($existingCount > 0) {
+            return 0; // already initialised, avoid duplication
+        }
+
+        return CoaTemplate::cloneToBusinessUnit($businessUnitId);
+    }
+
+    // ── Reorder Logic ───────────────────────────────────────────
+    //
+    // Strategy (based on two-pass approach):
+    //  1. Siblings with order <= targetOrder → renumber sequentially from 1
+    //  2. Siblings with order >= targetOrder → renumber from targetOrder+1
+    //
+    // This pushes existing items aside and reserves `targetOrder` for the
+    // new / moved item.
+
+    protected function reorderSiblings(?int $parentCode, int $targetOrder, ?int $excludeId = null, ?int $businessUnitId = null): void
+    {
+        $baseQuery = fn() => COA::when(
+                $parentCode !== null,
+                fn($q) => $q->where('parent_code', $parentCode),
+                fn($q) => $q->whereNull('parent_code')
+            )
+            ->when($businessUnitId, fn($q) => $q->where('business_unit_id', $businessUnitId))
+            ->when(!$businessUnitId, fn($q) => $q->whereNull('business_unit_id'))
+            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId));
+
+        // Pass 1: siblings at or before targetOrder → renumber 1..n
+        $before = $baseQuery()->where('order', '<=', $targetOrder)->orderBy('order')->get();
+        $no = 0;
+        foreach ($before as $sibling) {
+            $no++;
+            $sibling->updateQuietly(['order' => $no]);
+        }
+
+        // Pass 2: siblings at or after targetOrder → renumber targetOrder+1..n
+        $after = $baseQuery()->where('order', '>=', $targetOrder)->orderBy('order')->get();
+        $no = $targetOrder;
+        foreach ($after as $sibling) {
+            $no++;
+            $sibling->updateQuietly(['order' => $no]);
+        }
+    }
+
+    protected function normalizeOrder(?int $parentCode, ?int $businessUnitId = null): void
+    {
+        $siblings = COA::when(
+                $parentCode !== null,
+                fn($q) => $q->where('parent_code', $parentCode),
+                fn($q) => $q->whereNull('parent_code')
+            )
+            ->when($businessUnitId, fn($q) => $q->where('business_unit_id', $businessUnitId))
+            ->when(!$businessUnitId, fn($q) => $q->whereNull('business_unit_id'))
+            ->orderBy('order')
+            ->get();
+
+        foreach ($siblings as $index => $sibling) {
+            $sibling->updateQuietly(['order' => $index + 1]);
+        }
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────
 
     protected function calculateLevel(?int $parentCode): int
     {
@@ -197,50 +299,16 @@ class COAService
         return $parent ? ($parent->level + 1) : 0;
     }
 
-    public static function calculateOrder(?int $parentCode): int{
-        if(!$parentCode){
-            return COA::whereNull('parent_code')->count() + 1;
-        }
-
-        return COA::where('parent_code', $parentCode)->count();
-    }
-
-    protected function reorderSiblings(?int $parentCode, int $targetOrder, ?int $excludeId = null): void
+    public static function calculateOrder(?int $parentCode, ?int $businessUnitId = null): int
     {
-        // Get all siblings (excluding current item if editing), sorted by current order
-        $siblings = COA::when(
-                $parentCode !== null,
-                fn($q) => $q->where('parent_code', $parentCode),
-                fn($q) => $q->whereNull('parent_code')
-            )
-            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
-            ->orderBy('order')
-            ->get();
+        $query = COA::when($businessUnitId, fn($q) => $q->where('business_unit_id', $businessUnitId))
+            ->when(!$businessUnitId, fn($q) => $q->whereNull('business_unit_id'));
 
-        // Normalize orders sequentially, skipping targetOrder to reserve it
-        $newOrder = 1;
-        foreach ($siblings as $sibling) {
-            if ($newOrder == $targetOrder) {
-                $newOrder++; // Reserve this position for the new/moved item
-            }
-            $sibling->update(['order' => $newOrder]);
-            $newOrder++;
+        if (!$parentCode) {
+            return $query->whereNull('parent_code')->count() + 1;
         }
-    }
 
-    protected function normalizeOrder(?int $parentCode): void
-    {
-        $siblings = COA::when(
-                $parentCode !== null,
-                fn($q) => $q->where('parent_code', $parentCode),
-                fn($q) => $q->whereNull('parent_code')
-            )
-            ->orderBy('order')
-            ->get();
-
-        foreach ($siblings as $index => $sibling) {
-            $sibling->update(['order' => $index + 1]);
-        }
+        return $query->where('parent_code', $parentCode)->count() + 1;
     }
 
     protected function log(string $level, string $action, string $message, ?COA $coa = null, ?Throwable $e = null): void
@@ -256,6 +324,7 @@ class COAService
             $meta['coa_code'] = $coa->code;
             $meta['coa_name'] = $coa->name;
             $meta['coa_type'] = $coa->type;
+            $meta['business_unit_id'] = $coa->business_unit_id;
         }
 
         if ($e) {

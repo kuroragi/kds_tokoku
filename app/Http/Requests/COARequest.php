@@ -15,13 +15,16 @@ class COARequest extends FormRequest
     public function rules(): array
     {
         $coaId = $this->route('coa')?->id ?? $this->route('coa');
+        $businessUnitId = auth()->user()?->business_unit_id;
 
         return [
             'code' => [
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('c_o_a_s', 'code')->ignore($coaId),
+                Rule::unique('c_o_a_s', 'code')
+                    ->where('business_unit_id', $businessUnitId)
+                    ->ignore($coaId),
             ],
             'name' => 'required|string|max:255',
             'type' => 'required|in:aktiva,pasiva,modal,pendapatan,beban',
